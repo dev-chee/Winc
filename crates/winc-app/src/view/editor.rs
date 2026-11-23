@@ -80,6 +80,9 @@ fn draw_surface(app: &mut App, frame: &mut Frame<'_>) -> Option<usize> {
     let Some(index) = app.editor.active else {
         // 没有标签：释放缩放后的预览缓存，避免继续占用内存。
         app.preview.picture_cache = None;
+        if cfg!(target_os = "android") {
+            return None;
+        }
         // 没有打开目录时显示开始页（打开、新建、最近目录）；打开了目录但没有标签时显示
         // 欢迎页（常用操作及其快捷键）。
         if app.editor.workspace.is_none() {

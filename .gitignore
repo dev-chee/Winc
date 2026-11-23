@@ -3,5 +3,6 @@ samples/
 .DS_Store
 release/out/
 docs/
+!vendor/winit/docs/
 .idea/
 .winc/

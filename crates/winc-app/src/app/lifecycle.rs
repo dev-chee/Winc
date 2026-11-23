@@ -69,7 +69,7 @@ pub(crate) struct Opening {
     /// 新窗口与来源窗口共用的字体和字形缓存（创建渲染器时使用一次）。
     pub(crate) glyphs_from: Option<winc_render::SharedGlyphs>,
     /// 待使用的激活令牌（见 [`App::set_activation`]）。
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
     activation: Option<winit::window::ActivationToken>,
 }
 

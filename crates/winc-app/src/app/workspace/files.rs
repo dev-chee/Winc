@@ -679,6 +679,11 @@ impl App {
 
     /// 新建未命名文档并切换到该文档。
     pub(in crate::app) fn new_file(&mut self) {
+        #[cfg(target_os = "android")]
+        if self.android.activity.is_some() {
+            self.android_open();
+            return;
+        }
         self.editor.new_untitled();
         // 新建的未命名文件使用设置的默认语言（`editor.defaultLanguage`）。
         let language = self.default_language();
@@ -740,6 +745,13 @@ impl App {
     ///
     /// 未命名的文档弹出「另存为」面板；开启了「保存时格式化」时先格式化再保存。
     pub(in crate::app) fn save_active(&mut self) {
+        #[cfg(target_os = "android")]
+        if self.android.activity.is_some() {
+            if let Some(id) = self.editor.active().map(|doc| doc.id) {
+                self.android_save(id);
+            }
+            return;
+        }
         let Some(doc) = self.editor.active() else {
             return;
         };
@@ -901,6 +913,14 @@ impl App {
         quiet: bool,
         background: bool,
     ) -> bool {
+        #[cfg(target_os = "android")]
+        if self.android.activity.is_some() {
+            // Closing and other synchronous callers must wait for a confirmed document save.
+            if to.is_none() {
+                self.android_save(id);
+            }
+            return false;
+        }
         // 后台还在存上一次：需要在后台再存的，等这次存完再存一次；需要马上存的，先等这次保存完成，
         // 两次写入不会先后颠倒。
         if self.saving(id) {
@@ -1040,6 +1060,13 @@ impl App {
     /// macOS 上是系统的面板；Windows 上是系统的文件对话框；其他 Unix 平台通过 XDG 桌面门户由
     /// 桌面环境显示面板（`portal.rs`），门户不可用时说明原因（`App::pick_failed`）。
     pub(in crate::app) fn pick(&mut self, kind: Pick) {
+        #[cfg(target_os = "android")]
+        if self.android.activity.is_some() {
+            if matches!(kind, Pick::Open) {
+                self.android_open();
+            }
+            return;
+        }
         let Some(proxy) = self.link.proxy.clone() else {
             return;
         };
@@ -1100,7 +1127,7 @@ impl App {
             }
         }
 
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         {
             use crate::portal::Choose;
             // 门户的面板只能选文件或者只能选目录：「打开…」选文件，目录从「打开目录…」选。
@@ -1194,7 +1221,7 @@ impl App {
             });
         }
 
-        #[cfg(not(any(unix, windows)))]
+        #[cfg(any(target_os = "android", not(any(unix, windows))))]
         {
             let _ = (kind, name, dir, proxy);
             self.flash(t!("workspace-drop-to-open"));
@@ -1202,7 +1229,7 @@ impl App {
     }
 
     /// 选择面板打不开：按取消处理，并说明原因；没有门户（`error` 为 `None`）时说明替代的办法。
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
     pub(in crate::app) fn pick_failed(&mut self, kind: Pick, error: Option<&str>) {
         self.on_picked(kind, None);
         self.notify(

@@ -49,8 +49,8 @@ pub(crate) fn resize_cursor(direction: ResizeDirection) -> CursorIcon {
 impl App {
     /// 按配置决定是否由应用绘制标题栏，并相应地打开或关闭系统的边框和标题栏。
     pub(in crate::app) fn sync_title_bar(&mut self) {
-        self.window.controls =
-            !cfg!(target_os = "macos") && self.config.ui_native_title_bar != Some(true);
+        self.window.controls = !cfg!(any(target_os = "macos", target_os = "android"))
+            && self.config.ui_native_title_bar != Some(true);
         if let Some(window) = &self.window.handle {
             window.set_decorations(!self.window.controls);
         }

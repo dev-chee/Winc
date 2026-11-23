@@ -10,10 +10,10 @@ mod imp;
 #[cfg(all(windows, not(test)))]
 #[path = "credentials/windows.rs"]
 mod imp;
-#[cfg(all(unix, not(target_os = "macos"), not(test)))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android")), not(test)))]
 #[path = "credentials/secret_service.rs"]
 mod imp;
-#[cfg(any(test, not(any(unix, windows))))]
+#[cfg(any(test, target_os = "android", not(any(unix, windows))))]
 mod imp {
     use std::collections::BTreeMap;
     use std::sync::{Mutex, PoisonError};
@@ -47,7 +47,10 @@ mod imp {
 }
 
 /// 条目在系统凭据存储中所属的服务名，用户在系统的钥匙串工具中按此名称查找。
-#[cfg_attr(any(test, not(any(unix, windows))), expect(dead_code))]
+#[cfg_attr(
+    any(test, target_os = "android", not(any(unix, windows))),
+    expect(dead_code)
+)]
 const SERVICE: &str = "Winc Git";
 
 /// 一份已保存的凭据。

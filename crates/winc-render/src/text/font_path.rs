@@ -190,6 +190,12 @@ pub(crate) fn windows_fonts() -> PathBuf {
 /// 返回要查找的字体目录，包括系统的和当前用户的。
 #[cfg(not(target_os = "macos"))]
 fn font_dirs() -> Vec<PathBuf> {
+    if cfg!(target_os = "android") {
+        return ["/system/fonts", "/product/fonts", "/vendor/fonts"]
+            .into_iter()
+            .map(PathBuf::from)
+            .collect();
+    }
     if cfg!(target_os = "windows") {
         let mut dirs = vec![windows_fonts()];
         // 仅为当前用户安装的字体。

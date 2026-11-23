@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Winc</string>
+    <string name="open">打开</string>
+    <string name="save">保存</string>
+    <string name="keyboard">键盘</string>
+    <string name="undo">撤销</string>
+    <string name="more">更多</string>
+    <string name="export_draft">另存副本…</string>
+    <string name="export_original">导出上次保存的版本…</string>
+</resources>

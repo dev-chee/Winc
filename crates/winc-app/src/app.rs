@@ -4,6 +4,8 @@
 //! `view/` 读取这些状态绘制一帧。事件从 `winit` 的事件循环进入，经 `keyboard`、`mouse` 转成
 //! [`Action`](crate::keymap::Action)，或直接修改状态。
 
+#[cfg(target_os = "android")]
+mod android;
 pub(crate) mod animation;
 pub(crate) mod diff;
 pub(crate) mod editor;
@@ -130,7 +132,11 @@ type OrderedTask = Box<dyn FnOnce() + Send>;
 /// 后台线程和系统回调（面板、菜单、提示框）送回事件循环的事件。
 #[derive(Debug)]
 pub enum UserEvent {
+    /// An Android Activity or IME callback.
+    #[cfg(target_os = "android")]
+    Android(crate::android::Event),
     /// 打开或另存为面板已关闭；取消时路径为 `None`。
+    #[cfg_attr(target_os = "android", allow(dead_code))]
     Picked(Pick, Option<PathBuf>),
     /// 全局搜索产生了新结果，或已搜索完成。
     Searched,
@@ -164,7 +170,7 @@ pub enum UserEvent {
     /// 选择面板无法打开：参数为对应的选择与原因（没有桌面门户时原因为 `None`）。
     ///
     /// 仅出现在通过桌面门户选择文件的平台上。
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
     PickFailed(Pick, Option<String>),
     /// 后台已取回更新日志（整理好的 Markdown）；请求失败或内容格式不符时为 `None`。
     ReleaseNotes(Option<String>),
@@ -894,6 +900,8 @@ pub(crate) struct WordHighlight {
 ///
 /// 各功能的事件处理方法分布在 `app/` 的子模块中，均只读写本结构的字段。
 pub struct App {
+    #[cfg(target_os = "android")]
+    pub(crate) android: android::Mobile,
     /// 本帧绘制时记录的可点击范围与位置。
     pub hits: hits::Hits,
     // 编辑器、配置和历史

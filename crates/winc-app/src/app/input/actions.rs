@@ -598,6 +598,29 @@ impl App {
 
     /// 命令当前是否可用：属于某个模块的命令只在模块开着时可用。
     pub(in crate::app) fn action_available(&self, action: Action) -> bool {
+        if cfg!(target_os = "android")
+            && matches!(
+                action,
+                Action::NewFile
+                    | Action::NewWindow
+                    | Action::OpenRecent
+                    | Action::ReopenClosed
+                    | Action::SaveAs
+                    | Action::CloseWindow
+                    | Action::Quit
+                    | Action::SplitRight
+                    | Action::SplitDown
+                    | Action::Format
+                    | Action::FormatSelection
+                    | Action::Fix
+                    | Action::Settings
+                    | Action::OpenInTerminal
+                    | Action::EnableTerminal
+                    | Action::RestartLanguageServers
+            )
+        {
+            return false;
+        }
         match action {
             Action::RunConfiguration if self.editor.root().is_none() => return false,
             Action::LanguageCompletion => return self.lsp_action_available(true),

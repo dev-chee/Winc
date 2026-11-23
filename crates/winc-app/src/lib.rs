@@ -8,6 +8,8 @@
 // 测试直接在本机的临时目录中准备和检查文件。
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
+#[cfg(any(target_os = "android", test))]
+pub mod android;
 mod app;
 mod askpass;
 mod bench;
@@ -25,7 +27,7 @@ mod large_alloc;
 mod layout;
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
 mod portal;
 #[cfg(any(windows, target_os = "macos", test))]
 mod recents;
@@ -34,18 +36,19 @@ mod shell_command;
 mod shell_integration;
 mod system;
 mod theme;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
 mod trash;
 #[cfg(not(target_os = "macos"))]
+#[cfg_attr(target_os = "android", allow(dead_code))]
 mod updates;
 mod view;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
 mod wayland;
 mod web;
 mod winc;
 #[cfg(windows)]
 mod windows;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
 mod x11;
 
 /// 大块内存释放后立即归还给系统。

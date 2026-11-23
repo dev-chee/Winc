@@ -11,7 +11,10 @@ pub(crate) enum ClipImage {
     #[cfg_attr(not(any(test, target_os = "macos")), allow(dead_code))]
     Png(Vec<u8>),
     /// RGBA 像素，每像素 4 字节，逐行排列。
-    #[cfg_attr(any(test, target_os = "macos"), allow(dead_code))]
+    #[cfg_attr(
+        any(test, target_os = "macos", target_os = "android"),
+        allow(dead_code)
+    )]
     Rgba {
         width: usize,
         height: usize,
@@ -37,7 +40,7 @@ impl ClipImage {
 #[derive(Default)]
 pub(crate) struct Clipboard {
     /// 系统剪贴板，首次使用时才初始化。
-    #[cfg(not(test))]
+    #[cfg(not(any(test, target_os = "android")))]
     system: Option<arboard::Clipboard>,
     /// 测试中代替系统剪贴板的文本。
     #[cfg(test)]
@@ -56,16 +59,22 @@ pub(crate) struct Clipboard {
     pub unavailable: bool,
     /// 最近一次整行复制的文本；写入的不是整行或写入文件时为 `None`。
     whole_line: Option<String>,
+    #[cfg(all(target_os = "android", not(test)))]
+    text: Option<String>,
 }
 
 impl Clipboard {
     /// 返回剪贴板中的文本；没有文本或无法访问系统剪贴板时返回 `None`。
     pub(in crate::app) fn text(&mut self) -> Option<String> {
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            self.text.clone()
+        }
         #[cfg(test)]
         {
             self.copied.clone()
         }
-        #[cfg(not(test))]
+        #[cfg(not(any(test, target_os = "android")))]
         {
             self.system()?.get_text().ok()
         }
@@ -73,11 +82,15 @@ impl Clipboard {
 
     /// 返回剪贴板中的 HTML；没有时返回 `None`。
     pub(in crate::app) fn html(&mut self) -> Option<String> {
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            None
+        }
         #[cfg(test)]
         {
             self.copied_html.clone()
         }
-        #[cfg(not(test))]
+        #[cfg(not(any(test, target_os = "android")))]
         {
             self.system()?.get().html().ok()
         }
@@ -92,6 +105,13 @@ impl Clipboard {
             return false;
         }
         self.whole_line = whole_line.then(|| text.clone());
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            {
+                self.text = Some(text);
+                true
+            }
+        }
         #[cfg(test)]
         {
             self.copied = Some(text);
@@ -100,7 +120,7 @@ impl Clipboard {
             self.copied_image = None;
             true
         }
-        #[cfg(not(test))]
+        #[cfg(not(any(test, target_os = "android")))]
         {
             self.system()
                 .is_some_and(|system| system.set_text(text).is_ok())
@@ -116,11 +136,15 @@ impl Clipboard {
 
     /// 返回剪贴板中的文件（从系统文件管理器或文件树中复制的）；没有时为空。
     pub(in crate::app) fn files(&mut self) -> Vec<PathBuf> {
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            Vec::new()
+        }
         #[cfg(test)]
         {
             self.copied_files.clone()
         }
-        #[cfg(not(test))]
+        #[cfg(not(any(test, target_os = "android")))]
         {
             self.system()
                 .and_then(|system| system.get().file_list().ok())
@@ -139,6 +163,13 @@ impl Clipboard {
             return false;
         }
         self.whole_line = None;
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            {
+                let _ = paths;
+                false
+            }
+        }
         #[cfg(test)]
         {
             // 与系统剪贴板一样放不下远端的文件（见上）：写入失败，原有内容不变。
@@ -150,7 +181,7 @@ impl Clipboard {
             self.copied_files = paths.to_vec();
             true
         }
-        #[cfg(not(test))]
+        #[cfg(not(any(test, target_os = "android")))]
         {
             self.system()
                 .is_some_and(|system| system.set().file_list(paths).is_ok())
@@ -167,6 +198,10 @@ impl Clipboard {
     /// macOS 上直接取出剪贴板中的 PNG（只有 TIFF 时由系统转换）；其他平台上 arboard 给出 RGBA
     /// 像素。
     pub(in crate::app) fn image(&mut self) -> Option<ClipImage> {
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            None
+        }
         #[cfg(test)]
         {
             self.copied_image.clone().map(ClipImage::Png)
@@ -175,7 +210,7 @@ impl Clipboard {
         {
             crate::macos::pasteboard_png().map(ClipImage::Png)
         }
-        #[cfg(all(not(test), not(target_os = "macos")))]
+        #[cfg(not(any(test, target_os = "macos", target_os = "android")))]
         {
             let image = self.system()?.get_image().ok()?;
             Some(ClipImage::Rgba {
@@ -190,6 +225,10 @@ impl Clipboard {
     ///
     /// macOS 上不取出数据；其他平台上需要解码一次。
     pub(in crate::app) fn has_image(&mut self) -> bool {
+        #[cfg(all(target_os = "android", not(test)))]
+        {
+            false
+        }
         #[cfg(test)]
         {
             self.copied_image.is_some()
@@ -198,7 +237,7 @@ impl Clipboard {
         {
             crate::macos::pasteboard_has_image()
         }
-        #[cfg(all(not(test), not(target_os = "macos")))]
+        #[cfg(not(any(test, target_os = "macos", target_os = "android")))]
         {
             self.system()
                 .is_some_and(|system| system.get_image().is_ok())
@@ -206,7 +245,7 @@ impl Clipboard {
     }
 
     /// 返回系统剪贴板，首次调用时创建；创建失败时返回 `None`。
-    #[cfg(not(test))]
+    #[cfg(not(any(test, target_os = "android")))]
     fn system(&mut self) -> Option<&mut arboard::Clipboard> {
         if self.system.is_none() {
             self.system = arboard::Clipboard::new().ok();

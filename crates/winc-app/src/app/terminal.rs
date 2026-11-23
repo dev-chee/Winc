@@ -28,7 +28,6 @@ use std::time::{Duration, Instant};
 
 use winit::event::{ElementState, KeyEvent};
 use winit::keyboard::{Key, NamedKey};
-use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
 
 use winc_config::{OptionAsMeta, TerminalSession};
 use winc_i18n::t;

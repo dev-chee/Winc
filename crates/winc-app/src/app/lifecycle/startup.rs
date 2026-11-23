@@ -47,6 +47,8 @@ impl App {
         let vim = (config.vim_enabled == Some(true)).then(Box::default);
 
         Self {
+            #[cfg(target_os = "android")]
+            android: Default::default(),
             editor,
             terminal: terminal::TerminalPanel::default(),
             run: terminal::run::RunConfigs::default(),
@@ -240,7 +242,7 @@ impl App {
                 cascade: None,
                 fullscreen: false,
                 glyphs_from: None,
-                #[cfg(all(unix, not(target_os = "macos")))]
+                #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
                 activation: None,
             },
         }
@@ -255,7 +257,7 @@ impl App {
     pub(super) fn install_system_hooks(&mut self) {
         // 其他平台：以 AppImage 运行或由安装包安装时由应用自行更新（`updates.rs`），
         // 结果同样交给应用层。
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "android")))]
         if let Some(proxy) = self
             .link
             .proxy

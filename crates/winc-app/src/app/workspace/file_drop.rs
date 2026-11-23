@@ -107,9 +107,9 @@ impl App {
         let query = crate::macos::mouse_location;
         #[cfg(windows)]
         let query = crate::windows::mouse_location;
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         let query = crate::x11::mouse_location;
-        #[cfg(any(unix, windows))]
+        #[cfg(all(any(unix, windows), not(target_os = "android")))]
         if let Some((x, y)) = self.window.handle.as_ref().and_then(|w| query(w)) {
             return (x / self.zoom(), y / self.zoom());
         }

@@ -12,6 +12,19 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
+/// Returns the key without modifiers when the platform reports it.
+pub(crate) fn key_without_modifiers(event: &winit::event::KeyEvent) -> winit::keyboard::Key {
+    #[cfg(target_os = "android")]
+    {
+        event.logical_key.clone()
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
+        event.key_without_modifiers()
+    }
+}
+
 /// 返回「显示文件所在位置」按钮上的文字（按当前界面语言）。
 ///
 /// 文字随平台改变：macOS 上取自 `common-reveal-in-finder`，其他平台取自
@@ -207,7 +220,7 @@ pub fn move_to_trash(path: &Path) -> io::Result<()> {
         crate::macos::move_to_trash(path)
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
     {
         crate::trash::move_to_trash(path).map(|_| ())
     }
@@ -221,7 +234,7 @@ pub fn move_to_trash(path: &Path) -> io::Result<()> {
         crate::windows::move_to_recycle_bin(path)
     }
 
-    #[cfg(not(any(unix, windows)))]
+    #[cfg(any(target_os = "android", not(any(unix, windows))))]
     {
         let _ = path;
         Err(io::Error::new(
@@ -258,7 +271,7 @@ pub fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
         #[cfg(not(windows))]
         Ok(())
     } else {
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         if !cfg!(test) {
             let path = std::path::absolute(path)?;
             std::thread::spawn(move || {
@@ -288,7 +301,7 @@ fn explorer_select(path: &Path) -> std::ffi::OsString {
 }
 
 /// 请桌面的文件管理器打开 `path` 所在的目录并选中 `path`（接口方法 `ShowItems`）。
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
 fn show_items(path: &Path) -> zbus::Result<()> {
     let connection = zbus::blocking::Connection::session()?;
     let uri = format!("file://{}", crate::trash::encode_path(path));

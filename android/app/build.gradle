@@ -1,0 +1,78 @@
+plugins {
+    id 'com.android.application' version '8.13.2'
+}
+
+def repo = rootProject.projectDir.parentFile
+def rustLibs = layout.buildDirectory.dir('generated/jniLibs')
+def manifest = new File(repo, 'Cargo.toml').getText('UTF-8')
+def workspacePackage = (manifest =~ /(?ms)^\[workspace\.package\][ \t]*(?:#[^\r\n]*)?\r?\n(.*?)(?=^[ \t]*\[|\z)/)
+def productVersion
+if (workspacePackage.find()) {
+    def version = (workspacePackage.group(1) =~ /(?m)^[ \t]*version[ \t]*=[ \t]*(["'])([^"'\r\n]+)\1[ \t]*(?:#[^\r\n]*)?$/)
+    if (version.find()) {
+        productVersion = version.group(2)
+    }
+}
+if (productVersion == null) {
+    productVersion = new File(repo, 'VERSION').getText('UTF-8').trim()
+}
+
+android {
+    namespace 'si.winc.android'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+    ndkVersion providers.gradleProperty('winc.ndkVersion').getOrElse('28.2.13676358')
+    if (providers.gradleProperty('winc.ndkPath').isPresent()) {
+        ndkPath providers.gradleProperty('winc.ndkPath').get()
+    }
+
+    defaultConfig {
+        applicationId 'si.winc.android.poc'
+        minSdk 30
+        targetSdk 36
+        versionCode 1
+        versionName productVersion
+        ndk { abiFilters 'arm64-v8a' }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets.main.jniLibs.srcDir rustLibs
+}
+
+dependencies {
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    // Match android-activity's bundled GameActivity native glue.
+    implementation 'androidx.games:games-activity:4.4.0'
+}
+
+tasks.register('buildRust', Exec) {
+    workingDir repo
+    // Cargo decides which Rust inputs need rebuilding, including workspace path dependencies.
+    outputs.upToDateWhen { false }
+    // Keep the Android toolchain environment independent of developer and CI credentials.
+    def buildVariables = [
+            'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'SYSTEMDRIVE', 'COMSPEC',
+            'HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'TMP', 'TMPDIR',
+            'CARGO_HOME', 'CARGO_TARGET_DIR', 'RUSTUP_HOME', 'RUSTUP_TOOLCHAIN',
+    ] as Set
+    def requestedRustFlags = environment['RUSTFLAGS']
+    environment = environment.findAll { name, ignored ->
+        buildVariables.contains(name.toUpperCase(Locale.ROOT))
+    }
+    environment 'CARGO_NDK_NO_PANIC_HOOK', '1'
+    doFirst {
+        environment 'ANDROID_NDK_HOME', androidComponents.sdkComponents.ndkDirectory.get().asFile.absolutePath
+    }
+    environment 'RUSTFLAGS', [requestedRustFlags, '-C link-arg=-Wl,-z,max-page-size=16384']
+            .findAll { it }.join(' ')
+    def cargo = System.getProperty('os.name').startsWith('Windows') ? 'cargo.exe' : 'cargo'
+    commandLine cargo, 'ndk', '-t', 'arm64-v8a', '--platform', '30',
+            '-o', rustLibs.get().asFile.absolutePath, 'build', '--locked', '-p', 'winc-android'
+}
+
+tasks.named('preBuild') { dependsOn tasks.named('buildRust') }
