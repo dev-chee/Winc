@@ -27,16 +27,14 @@ of releasing it again. To retry a failed build, rerun the Release workflow on th
 
 ## Version and source
 
-The release version is the single line of the `VERSION` file at the repository root. To prepare a
-version, edit that file, commit it, then merge into `main`. The program reads the same file at
-compile time through the `winc-version` crate.
+Set `version` in `[workspace.package]` in the root `Cargo.toml` to prepare a release. The `winc`
+and `winc-version` packages inherit that version, and the release scripts read the same field.
+Run `cargo check -p winc-version` to refresh `Cargo.lock`, then commit both files and merge into
+`main`.
 
-The crates themselves carry no version: Cargo hashes a package's version into its build
-artifacts, so a version in `Cargo.toml` would rebuild every crate from scratch on each release and
-leave the old artifacts in `target`. `Cargo.lock` therefore does not change with the release
-version. The Release workflow rejects a `Cargo.lock` that does not match `Cargo.toml`, a tag that
-does not equal `v<version>`, a checkout that differs from the workflow's immutable commit, or a
-tag that moved after the build began.
+The Release workflow verifies the lockfile against `Cargo.toml`, the tag against `v<version>`,
+and the checkout against the workflow's immutable commit. It also checks the tag again after the
+build.
 
 The Release workflow can also be dispatched manually. With `release_tag` set, a branch-context request
 dispatches a new run on that existing tag. With no tag selected, a branch run builds downloadable

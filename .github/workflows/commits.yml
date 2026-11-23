@@ -98,7 +98,7 @@ jobs:
         run: |
           version="$(node release/common/version.mjs)"
           if git ls-remote --exit-code --tags origin "refs/tags/v${version}" >/dev/null; then
-            echo "::error::v${version} is already released. Raise the version in VERSION" \
+            echo "::error::v${version} is already released. Raise the workspace version in Cargo.toml" \
               "on dev before merging into main."
             exit 1
           fi

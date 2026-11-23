@@ -1,17 +1,22 @@
-//! 各平台安装包的 PNG、ICO 图标，均从应用内同一份 SVG 渲染。
+//! 各平台安装包和 Windows 可执行文件的图标，均从应用内同一份 SVG 渲染。
 
 use std::path::Path;
 
 use crate::root;
 
-/// 在 `out` 中生成 `winc.png`（256 像素）和含四种尺寸的 `winc.ico`。
+mod resource;
+
+/// 图标组的资源编号，运行时按此编号加载窗口图标（见 `App::resumed`）。
+const ICON_GROUP: u16 = 1;
+
+/// 在 `out` 中生成 `winc.png`（256 像素）和含四种尺寸的 `winc.ico`、`winc.res`。
 ///
-/// 嵌入 Windows 可执行文件的 `crates/winc-app/assets/winc.ico` 是其中一次的结果，提交在仓库里
-/// （构建 Windows 版本时不必渲染 SVG）；改了 SVG 以后要把新生成的文件复制过去，否则测试失败。
+/// Windows 构建直接链接提交到仓库的 `crates/winc-app/assets/winc.res`。改了 SVG 后，
+/// 把新生成的 `winc.res` 复制过去。
 ///
 /// # Errors
 ///
-/// 读取、解析 SVG 或写入图标失败时返回原因。
+/// 读取、解析 SVG，转换 Windows 图标资源或写入图标失败时返回原因。
 pub fn write(out: &Path) -> Result<(), String> {
     let io = |e: std::io::Error| e.to_string();
     let text =
@@ -53,7 +58,9 @@ pub fn write(out: &Path) -> Result<(), String> {
     for (_, bytes) in images {
         ico.extend(bytes);
     }
-    std::fs::write(out.join("winc.ico"), ico).map_err(io)
+    let res = resource::icon_resources(&ico, ICON_GROUP).ok_or("无法转换 Windows 图标资源")?;
+    std::fs::write(out.join("winc.ico"), ico).map_err(io)?;
+    std::fs::write(out.join("winc.res"), res).map_err(io)
 }
 
 #[cfg(test)]

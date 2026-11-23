@@ -155,7 +155,7 @@ The workspace is split into crates by responsibility:
 | `winc-pty` | Terminal emulation and the pseudo-terminal helper process |
 | `winc-config` | Configuration and state files |
 | `winc-i18n` | Interface strings (Fluent bundles) |
-| `winc-version` | The product version, read from the `VERSION` file |
+| `winc-version` | The product version inherited from the root `Cargo.toml` |
 | `winc-app` | The application: windows, events, and views |
 | `winc` | The executable's entry point, which only calls into `winc-app` |
 | `xtask` | Development automation: tests, benchmarks, and packaging |

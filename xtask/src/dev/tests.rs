@@ -37,10 +37,16 @@ fn changes_pull_in_the_crates_that_depend_on_them() {
         ["winc", "winc-app", "winc-core", "winc-editor", "xtask"]
     );
     assert_eq!(affected(&["src/main.rs"]), ["winc"]);
-    assert_eq!(affected(&["build_icon.rs"]), ["winc"]);
+    assert_eq!(affected(&["build.rs"]), ["winc"]);
+    for asset in [
+        "crates/winc-app/assets/icon.svg",
+        "crates/winc-app/assets/winc.res",
+    ] {
+        assert_eq!(affected(&[asset]), ["winc", "winc-app", "xtask"]);
+    }
     assert!(affected(&["docs/GIT.md"]).is_empty());
     assert_eq!(affected(&["Cargo.lock"]).len(), members.len());
-    assert_eq!(affected(&["VERSION"]).len(), members.len());
+    assert_eq!(affected(&["Cargo.toml"]).len(), members.len());
 }
 
 #[test]
@@ -63,7 +69,7 @@ fn source_files_stay_within_the_size_limit() {
     for source in [
         "src/main.rs",
         "build.rs",
-        "build_icon.rs",
+        "xtask/src/icons/resource.rs",
         "xtask/src/main.rs",
     ] {
         assert_eq!(sizes.iter().filter(|(path, _)| path == source).count(), 1);

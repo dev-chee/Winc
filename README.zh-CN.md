@@ -146,7 +146,7 @@ cargo xtask bench                   # 测启动、内存、滚动，对照性能
 | `winc-pty` | 终端仿真和伪终端的辅助进程 |
 | `winc-config` | 配置和状态文件 |
 | `winc-i18n` | 界面文案（Fluent 语言包） |
-| `winc-version` | 产品版本号，取自 `VERSION` 文件 |
+| `winc-version` | 产品版本号，继承自根 `Cargo.toml` |
 | `winc-app` | 应用本体：窗口、事件、各个界面 |
 | `winc` | 可执行文件的入口，只调用 `winc-app` |
 | `xtask` | 开发自动化：测试、基准、打包 |

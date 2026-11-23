@@ -3163,7 +3163,7 @@ dependencies = [
 
 [[package]]
 name = "winc"
-version = "0.0.0"
+version = "0.1.890"
 dependencies = [
  "winc-app",
 ]
@@ -3363,7 +3363,7 @@ dependencies = [
 
 [[package]]
 name = "winc-version"
-version = "0.0.0"
+version = "0.1.890"
 
 [[package]]
 name = "winc-vim"

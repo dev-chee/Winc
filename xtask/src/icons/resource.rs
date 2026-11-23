@@ -16,7 +16,7 @@ const ICO_ENTRY: usize = 16;
 /// 把 ICO 文件的内容 `ico` 转换成 `.res` 文件的内容；图标组的编号是 `group`。
 ///
 /// 各尺寸的编号从 1 起。文件头不合法或目录项超出文件范围时返回 `None`。
-pub fn icon_resources(ico: &[u8], group: u16) -> Option<Vec<u8>> {
+pub(super) fn icon_resources(ico: &[u8], group: u16) -> Option<Vec<u8>> {
     let word = |at: usize| Some(u16::from_le_bytes(ico.get(at..at + 2)?.try_into().ok()?));
     let long = |at: usize| Some(u32::from_le_bytes(ico.get(at..at + 4)?.try_into().ok()?));
     if word(0)? != 0 || word(2)? != 1 {

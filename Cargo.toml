@@ -1,6 +1,7 @@
 [package]
 name = "winc"
 description = "winc 可执行文件的入口，程序的实现在 winc-app 中。"
+version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
@@ -23,6 +24,7 @@ exclude = ["vendor/winit"]
 winit = { path = "vendor/winit" }
 
 [workspace.package]
+version = "0.1.890"
 edition = "2024"
 rust-version = "1.89"
 publish = false

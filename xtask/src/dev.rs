@@ -23,16 +23,9 @@ struct Member {
 
 /// 根包的源码和构建脚本。
 fn root_source(path: &Path) -> bool {
-    [
-        "src",
-        "tests",
-        "examples",
-        "benches",
-        "build.rs",
-        "build_icon.rs",
-    ]
-    .iter()
-    .any(|source| path.starts_with(source))
+    ["src", "tests", "examples", "benches", "build.rs"]
+        .iter()
+        .any(|source| path.starts_with(source))
 }
 
 /// 各 crate 允许依赖的 workspace 内的包；未列出的 crate 不允许依赖任何内部包。
@@ -299,16 +292,10 @@ fn changed_files(root: &Path, base: Option<&str>) -> Result<Vec<PathBuf>, String
 
 /// 返回要测的包：改动的文件所在的包，以及直接、间接依赖这些包的包。
 ///
-/// 根目录的 `Cargo.toml`、`Cargo.lock`、`VERSION`、`.cargo/`、`rust-toolchain.toml` 变了时全部要测；
-/// 不属于任何包的文档文件不算。
+/// 根目录的 `Cargo.toml`、`Cargo.lock`、`.cargo/`、`rust-toolchain.toml` 变了时全部要测。
+/// 应用图标的 SVG 或 RES 变了时也运行 `xtask` 的图标测试。不属于任何包的文档文件不算。
 fn affected(members: &[Member], changed: &[PathBuf]) -> Vec<String> {
-    let global = [
-        "Cargo.toml",
-        "Cargo.lock",
-        "VERSION",
-        "rust-toolchain.toml",
-        ".cargo",
-    ];
+    let global = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", ".cargo"];
     if changed
         .iter()
         .any(|f| global.iter().any(|g| f.starts_with(g)))
@@ -321,7 +308,15 @@ fn affected(members: &[Member], changed: &[PathBuf]) -> Vec<String> {
             if m.dir.as_os_str().is_empty() {
                 changed.iter().any(|f| root_source(f))
             } else {
-                changed.iter().any(|f| f.starts_with(&m.dir))
+                changed.iter().any(|f| {
+                    f.starts_with(&m.dir)
+                        || (m.name == "xtask"
+                            && [
+                                Path::new("crates/winc-app/assets/icon.svg"),
+                                Path::new("crates/winc-app/assets/winc.res"),
+                            ]
+                            .contains(&f.as_path()))
+                })
             }
         })
         .map(|m| m.name.as_str())

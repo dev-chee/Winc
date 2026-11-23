@@ -6,9 +6,9 @@ $ErrorActionPreference = 'Stop'
 if ($Target -ne 'x86_64-pc-windows-msvc') { throw "unsupported Windows target: $Target" }
 $root = (Resolve-Path "$PSScriptRoot/../..").Path
 $version = (& node "$PSScriptRoot/../common/version.mjs").Trim()
-if ($LASTEXITCODE -ne 0) { throw 'cannot read the VERSION file' }
+if ($LASTEXITCODE -ne 0) { throw 'cannot read the workspace version from Cargo.toml' }
 $config = Get-Content "$env:RUNNER_TEMP/build-config.json" -Raw | ConvertFrom-Json
-if ($config.version -ne $version) { throw 'build configuration does not match the VERSION file' }
+if ($config.version -ne $version) { throw 'build configuration does not match the workspace version in Cargo.toml' }
 $release = "$root/target/$Target/release"
 $bundle = "$release/bundle"
 $stage = "$bundle/stage"

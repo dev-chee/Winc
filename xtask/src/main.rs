@@ -14,7 +14,7 @@
 //! cargo xtask dmg              构建 release，打成 macOS 的 winc.app 和安装用的 dmg
 //! cargo xtask dmg --app 路径    把签好名的 winc.app 原样做成 dmg，不重新构建、不重新签名
 //!     [--output 路径]           指定最终 dmg 的路径
-//! cargo xtask icons 目录        从应用的 SVG 生成打包用的 PNG 和 ICO
+//! cargo xtask icons 目录        从应用的 SVG 生成 PNG、ICO 和 Windows 图标资源 RES
 //! cargo xtask server           构建各个架构的远端服务进程到 target/remote-server/（打包用）
 //! cargo xtask test             只测和 HEAD 相比改动涉及的 crate，测完清理过时的目标文件
 //!     [--all] [--base 提交] [-- 测试名过滤等 cargo test 参数]

@@ -1,6 +1,7 @@
 [package]
 name = "winc-version"
-description = "产品版本号：仓库根目录的 VERSION 文件，编译时嵌入。"
+description = "产品版本号，从根 Cargo.toml 继承并在编译时嵌入。"
+version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
