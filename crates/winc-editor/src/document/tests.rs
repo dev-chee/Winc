@@ -11,6 +11,22 @@ use std::time::SystemTime;
 
 mod unicode_escapes;
 
+#[test]
+fn opens_teal_source_and_generated_interfaces_with_highlighting() {
+    let dir = scratch("teal-language");
+    for (name, id) in [("main.TL", "teal"), ("host.tli", "teal-interface")] {
+        let path = dir.join(name);
+        fs::write(&path, "pub task greet() -> string;\n").unwrap();
+        let mut doc = Document::open(DocumentId(1), path).unwrap();
+        assert_eq!(doc.highlighter.language().id, id);
+        doc.choose_language(winc_syntax::detect(""));
+        assert_eq!(doc.highlighter.language().id, "text");
+        doc.choose_language(winc_syntax::find(id).unwrap());
+        assert_eq!(doc.highlighter.language().id, id);
+    }
+    fs::remove_dir_all(&dir).unwrap();
+}
+
 #[cfg(unix)]
 #[test]
 fn atomic_writes_use_a_fresh_private_temporary_file() {

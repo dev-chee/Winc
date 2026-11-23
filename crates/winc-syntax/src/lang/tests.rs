@@ -31,6 +31,24 @@ fn detects_by_name_and_extension() {
 }
 
 #[test]
+fn detects_and_lists_teal_languages() {
+    for (stem, extension, id, name) in [
+        ("main", "tl", "teal", "Teal"),
+        ("host", "tli", "teal-interface", "Teal Interface"),
+    ] {
+        let language = detect(&format!("{stem}.{extension}"));
+        assert_eq!(language.id, id);
+        assert_eq!(language.name, name);
+        assert!(std::ptr::eq(
+            detect(&format!("{stem}.{}", extension.to_uppercase())),
+            language
+        ));
+        assert!(std::ptr::eq(find(name).unwrap(), language));
+        assert!(languages().iter().any(|&l| std::ptr::eq(l, language)));
+    }
+}
+
+#[test]
 fn dockerfile_directives_are_keywords_only_for_dockerfile() {
     let dockerfile = detect("Dockerfile");
     assert!(dockerfile.keywords.contains(&"FROM"));

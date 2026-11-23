@@ -25,7 +25,7 @@ impl Cx<'_, '_> {
             false => 0.0,
         };
         let room = (width - pad * 2.0 - gutter).max(size);
-        let language = winc_syntax::find(lang);
+        let language = winc_syntax::find_fence_language(lang);
         let mut state = winc_syntax::LineState::default();
         let bg_at = out.len();
         let mut top = y + pad;

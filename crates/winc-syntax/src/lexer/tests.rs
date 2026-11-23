@@ -36,6 +36,8 @@ fn python_basics() {
     assert_eq!(next, LineState::Normal);
 }
 
+mod teal;
+
 #[test]
 fn config_keys_are_properties() {
     let keys = |file: &str, line: &str| -> Vec<String> {

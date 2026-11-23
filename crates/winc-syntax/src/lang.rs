@@ -1,17 +1,18 @@
 //! 语言定义：文件类型识别、关键字、注释与字符串规则，以及 [`Language`] 表。
 //!
-//! 每种语言的规则都是静态数据，各字段的单位与含义见 [`Language`]；词法分析只读这些字段，
-//! 不为具体语言写分支。
+//! 语言的共有规则用静态数据表示，各字段的单位与含义见 [`Language`]。
 
 mod code;
 mod config;
 mod data;
 mod script;
+mod teal;
 
 use code::*;
 use config::*;
 use data::*;
 use script::*;
+use teal::*;
 
 /// 一种语言的词法规则，全部是静态数据。
 #[derive(Debug)]
@@ -548,6 +549,8 @@ static PLAIN: Language = BASE;
 static ALL: &[&Language] = &[
     &PYTHON,
     &RUST,
+    &TEAL,
+    &TEAL_INTERFACE,
     &TYPESCRIPT,
     &JAVASCRIPT,
     &ARKTS,
@@ -646,16 +649,16 @@ const FENCE_ALIASES: &[(&str, &str)] = &[
     ("console", "shell"),
 ];
 
-/// 返回 Markdown 代码块信息字符串（```` ```rust ````、```` ```js {1,3} ````）指明的语言在
-/// [`languages`] 中的下标；认不出时返回 `None`。
+/// 返回 Markdown 代码块信息字符串（```` ```rust ````、```` ```js {1,3} ````）指明的语言，
+/// 认不出时返回 `None`。
 ///
-/// 取信息字符串的第一个单词，依次按语言 id 或名字、[`FENCE_ALIASES`] 中的常用写法、扩展名查找。
-pub(crate) fn fence_language(info: &str) -> Option<u8> {
+/// 取信息字符串的第一个单词，依次按语言 id 或名字、常用别名、扩展名查找。
+pub fn find_fence_language(info: &str) -> Option<&'static Language> {
     let word = info
         .split(|c: char| c.is_whitespace() || matches!(c, ',' | '{' | '}'))
         .find(|w| !w.is_empty())?
         .trim_start_matches('.');
-    let language = find(word)
+    find(word)
         .or_else(|| {
             FENCE_ALIASES
                 .iter()
@@ -665,7 +668,12 @@ pub(crate) fn fence_language(info: &str) -> Option<u8> {
         .or_else(|| {
             let language = detect(&format!("x.{word}"));
             (!std::ptr::eq(language, &PLAIN)).then_some(language)
-        })?;
+        })
+}
+
+/// 返回围栏语言在 [`languages`] 中的下标，用于编码行首状态。
+pub(crate) fn fence_language(info: &str) -> Option<u8> {
+    let language = find_fence_language(info)?;
     let index = ALL.iter().position(|l| std::ptr::eq(*l, language))?;
     u8::try_from(index).ok()
 }

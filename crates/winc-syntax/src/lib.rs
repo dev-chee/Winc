@@ -12,7 +12,7 @@ use winc_core::text::{Lines, MAX_LINE_BYTES, MAX_LINE_CHARS};
 
 pub use lang::{
     BlockString, Heredocs, Interpolation, Language, Markup, RawStrings, Variables, detect,
-    detect_with_first_line, find, languages,
+    detect_with_first_line, find, find_fence_language, languages,
 };
 pub use lexer::{LineState, Token, TokenKind, highlight_line};
 

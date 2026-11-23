@@ -11,6 +11,7 @@ mod markup;
 mod shell;
 mod strings;
 mod style;
+mod teal;
 
 use crate::lang::{Heredocs, Language, Markup, RawStrings, Variables, language_at};
 
@@ -253,7 +254,7 @@ pub enum TokenKind {
     Keyword,
     /// 内置常量、内置函数和内置类型名（语言表中列出的名字）。
     Builtin,
-    /// 按命名习惯识别的类型名（见 [`Language::capitalized_types`]）。
+    /// 类型声明名，或按命名习惯识别的类型名（见 [`Language::capitalized_types`]）。
     Type,
     /// 字符串或字符字面量。
     String,
@@ -263,13 +264,13 @@ pub enum TokenKind {
     Number,
     /// 注释。
     Comment,
-    /// 函数名：后面紧跟 `(` 的标识符。
+    /// 函数声明名或调用位置的标识符。
     Function,
     /// 装饰器、注解、属性，以及以 `#` 开头的预处理指令。
     Decorator,
     /// 配置文件中的键、样式表中的属性名（见 [`Language::key_separators`]）。
     Property,
-    /// 变量引用（见 [`Language::variables`]），以及符号（见 [`Language::colon_symbols`]）。
+    /// 变量引用、模块路径、循环标签，以及符号（见 [`Language::colon_symbols`]）。
     Variable,
     /// 标记语言的标签名、样式表选择器中的元素名。
     Tag,
@@ -515,6 +516,8 @@ struct Lexer<'a> {
     expect_property: bool,
     /// Markdown：当前行是否是以 `|` 开头的表格行，其中的 `|` 是列分隔符。
     table_row: bool,
+    /// Teal 的行内声明或导入上下文。其他语言为 `None`。
+    teal: Option<teal::CodeContext>,
     /// 样式表：当前是否处于声明的值中（属性名之后、`;` 或 `}` 之前）。
     ///
     /// 到行尾仍为真时值延续到下一行。
@@ -541,6 +544,8 @@ impl<'a> Lexer<'a> {
             expect_property: false,
             in_value: false,
             table_row: false,
+            teal: matches!(language.id, "teal" | "teal-interface")
+                .then_some(teal::CodeContext::Plain),
         }
     }
 }
@@ -823,6 +828,9 @@ impl Lexer<'_> {
     /// 转义序列、插值和变量单独记成 token。到行尾仍未结束时，剩下的部分整个记成 token，
     /// 返回 `None`。
     fn close(&mut self, start: usize, from: usize, span: &Span) -> Option<usize> {
+        if self.teal.is_some() && span.close == "\"" {
+            return self.teal_string_close(start, from);
+        }
         let n = self.chars.len();
         let escape = self.language.escape_char;
         let close_len = span.close.chars().count();
@@ -1087,6 +1095,9 @@ impl Lexer<'_> {
     ///
     /// 不产生 token 时同样推进到下一个字符，保证调用方总能前进。
     fn token(&mut self, i: usize) -> usize {
+        if let Some(context) = self.teal {
+            return self.teal_token(i, context);
+        }
         let language = self.language;
         let chars = self.chars;
         let n = chars.len();

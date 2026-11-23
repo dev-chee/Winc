@@ -167,6 +167,22 @@ fn code_blocks_keep_their_text_and_are_highlighted() {
 }
 
 #[test]
+fn teal_code_blocks_are_highlighted_in_preview() {
+    for info in ["teal", "tl", "teal-interface", "tli"] {
+        let laid = lay(
+            &format!("```{info}\npub task greet() -> string;\n```\n"),
+            600.0,
+        );
+        assert!(
+            texts(&laid[0].0)
+                .iter()
+                .any(|t| t.2 == TOKEN && t.3 == "task"),
+            "{info}"
+        );
+    }
+}
+
+#[test]
 fn links_cover_their_text() {
     let laid = lay("see [the site](https://example.com) for more\n", 600.0);
     let link = laid[0].0.items.iter().find_map(|item| match item {
