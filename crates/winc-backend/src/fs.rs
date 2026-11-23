@@ -55,6 +55,11 @@ impl Kind {
     pub fn is_symlink(self) -> bool {
         self == Self::Symlink
     }
+
+    /// 是否为特殊文件（设备、命名管道、套接字等）。
+    pub fn is_other(self) -> bool {
+        self == Self::Other
+    }
 }
 
 impl From<std::fs::FileType> for Kind {

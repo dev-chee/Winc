@@ -560,9 +560,9 @@ impl App {
                 self.copy_finished(&copying);
                 self.pasted_into_tree(done, failure);
             }
-            UserEvent::Downloaded(done, failure, copying) => {
-                self.copy_finished(&copying);
-                self.downloaded(done, failure);
+            UserEvent::Downloaded(outcome, copying) => {
+                let canceled = self.copy_finished(&copying);
+                self.downloaded(outcome, canceled);
             }
             UserEvent::Copied(copies, failures, copying) => {
                 self.copy_finished(&copying);

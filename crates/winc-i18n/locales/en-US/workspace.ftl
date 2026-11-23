@@ -52,6 +52,13 @@ workspace-tree-copy-canceled = Copy canceled
 workspace-download-done-one = Downloaded “{ $name }”
 workspace-download-done-many = Downloaded { $count } items
 workspace-download-failed = Couldn’t download “{ $name }”: { $error }
+workspace-download-skipped = { $downloaded }, skipping { $count ->
+        [one] { $count } item
+       *[other] { $count } items
+    } that can’t be downloaded: { $paths }
+workspace-download-failed-skipped = { $failed }. Skipped before the error: { $paths }
+workspace-download-skipped-item = { $name } ({ $reason })
+workspace-download-skipped-more = { $paths } and { $rest } more
 workspace-download-file = Downloading “{ $name }”… { $done } of { $total }
 workspace-download-folder = Downloading “{ $name }”… { $done } downloaded
 workspace-download-canceled = Download canceled

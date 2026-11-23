@@ -1322,7 +1322,7 @@ fn local_only_actions_are_not_offered_on_a_remote_host() {
 /// [`folders_on_a_remote_host_are_not_taken_for_files`]。
 ///
 /// 远端文件树的「下载…」：文件和目录复制到本机选定的目录，重名时不覆盖，完成后可以在文件管理器
-/// 中显示。由 [`a_folder_on_a_connected_host_opens_as_the_workspace`] 调用，原因同
+/// 中显示；目录中的特殊文件跳过并在提示中列出，单独下载特殊文件时报错。由 [`a_folder_on_a_connected_host_opens_as_the_workspace`] 调用，原因同
 /// [`folders_on_a_remote_host_are_not_taken_for_files`]。
 fn remote_items_download_to_this_computer() {
     let dir = search_folder("remote-download").canonicalize().unwrap();
@@ -1330,6 +1330,10 @@ fn remote_items_download_to_this_computer() {
     std::fs::write(dir.join("50%.txt"), "half\n").unwrap();
     std::fs::create_dir_all(dir.join("kit/inner")).unwrap();
     std::fs::write(dir.join("kit/inner/tool.txt"), "tool\n").unwrap();
+    let fifo = std::process::Command::new("mkfifo")
+        .arg(dir.join("kit/pipe"))
+        .status();
+    assert!(fifo.unwrap().success());
     let here = sample_folder("remote-download-here")
         .canonicalize()
         .unwrap();
@@ -1347,11 +1351,20 @@ fn remote_items_download_to_this_computer() {
     assert_eq!(read("notes 副本.txt"), "note\n");
     assert_eq!(read("kit/inner/tool.txt"), "tool\n");
     assert_eq!(read("50%.txt"), "half\n");
-    assert_eq!(app.notice.text.as_deref(), Some("已下载 3 项"));
+    assert!(!here.join("kit/pipe").exists());
+    assert_eq!(
+        app.notice.text.as_deref(),
+        Some("已下载 3 项，已跳过 1 项无法下载的内容：kit/pipe（不是普通文件）")
+    );
+    assert_eq!(app.notice.kind, crate::app::NoticeKind::Warning);
     assert_eq!(
         app.notice.action,
         Some(NoticeAction::Reveal(here.join("50%.txt")))
     );
+
+    app.download(vec![root.join("kit/pipe")], here.clone());
+    assert_eq!(app.notice.kind, crate::app::NoticeKind::Error);
+    assert!(!here.join("pipe").exists());
 
     let _ = std::fs::remove_dir_all(&dir);
     let _ = std::fs::remove_dir_all(&here);
