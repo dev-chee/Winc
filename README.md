@@ -42,7 +42,7 @@ Measured on macOS; results vary with hardware and system load.
 | Area | Capabilities |
 | --- | --- |
 | Editing | Multiple cursors, find and replace, native input methods, smooth scrolling in gigabyte-sized files, and an experimental Vim mode |
-| Syntax | Highlighting for common programming, markup, data, and configuration languages, plus lightweight go-to-definition and usages without a language server |
+| Syntax | Highlighting for common languages and formats, lightweight navigation, and language servers for Rust and Teal |
 | Formatting | Whole-file formatting with external tools such as rustfmt, Prettier, Black, Ruff, and gofmt |
 | Preview | Markdown with math and Mermaid diagrams, images, SVG, PDF (macOS and Windows), Word documents (docx), and spreadsheets (xlsx, csv), with the source one click away |
 | Git | Side-by-side diffs with word-level highlights, staging by hunk, commit and push, a commit graph, and blame |
@@ -63,6 +63,28 @@ Window dragging and edge snapping use the same native Windows behavior as mouse 
 Image and SVG previews zoom like the PDF preview: hold Ctrl (⌘ on macOS) and scroll, pinch, or
 press Ctrl/⌘ with `+`, `-` or `0`; the point under the pointer stays in place. Scroll or drag a
 zoomed image to pan, and double-click to fit it again. This also works in the SVG split preview.
+
+### Rust and Teal language servers
+
+Winc starts `rust-analyzer` for local `.rs` files and `teal lsp` for local `.tl` and `.tli` files.
+Put the executables on your `PATH`. With rustup, install `rust-analyzer` and `rust-src` for the
+project's toolchain using `rustup component add rust-analyzer rust-src`. For Teal, use an
+installation that includes its runtime.
+
+Use **Go to Definition** and **Find References** for semantic navigation. Press **Ctrl+Space**
+for completion or open the command palette for **Trigger Completion**, **Show Hover**,
+**Show Diagnostics**, and **Restart Language Servers**. Diagnostics appear in the gutter and the
+current file's diagnostics list. Unsaved edits are sent to the server.
+
+Rust files in the same Cargo workspace or `rust-project.json` project share analysis.
+Standalone Rust files share unsaved edits within their nearest open workspace folder, or their
+parent directory when opened outside a workspace. Rust completions can add imports.
+With a Teal server that supports dynamic file watching, such as Teal 0.3.0, Winc refreshes
+diagnostics when a path dependency changes, including directories replaced outside the open folder.
+When Teal advertises versioned diagnostics, Winc displays results for the current buffer version.
+
+Winc starts rust-analyzer with build scripts, procedural macros, and Cargo checks on save
+disabled. Definition and reference commands fall back to text search if the server is unavailable.
 
 ## Platforms
 

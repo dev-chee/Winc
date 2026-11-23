@@ -21,6 +21,10 @@ pub enum Action {
     GoToDefinition,
     OpenLink,
     FindReferences,
+    LanguageCompletion,
+    LanguageHover,
+    LanguageDiagnostics,
+    RestartLanguageServers,
     GoBack,
     GoForward,
     Settings,
@@ -421,6 +425,10 @@ impl Action {
             GoToDefinition => t!("cmd-go-to-definition"),
             OpenLink => t!("cmd-open-link"),
             FindReferences => t!("cmd-find-references"),
+            LanguageCompletion => t!("cmd-language-completion"),
+            LanguageHover => t!("cmd-language-hover"),
+            LanguageDiagnostics => t!("cmd-language-diagnostics"),
+            RestartLanguageServers => t!("cmd-restart-language-servers"),
             GoBack => t!("cmd-go-back"),
             GoForward => t!("cmd-go-forward"),
             Settings => t!("cmd-settings"),
@@ -729,6 +737,10 @@ impl Action {
             | GoToDefinition
             | OpenLink
             | FindReferences
+            | LanguageCompletion
+            | LanguageHover
+            | LanguageDiagnostics
+            | RestartLanguageServers
             | GoBack
             | GoForward
             | Settings

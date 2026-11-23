@@ -100,6 +100,7 @@ impl App {
                 self.blame_saved(id);
                 self.latex_saved(id);
                 self.run_file_saved(id);
+                self.language_server_saved(id);
                 self.request_redraw();
             }
             Err(e) => self.save_failed(id, &name, &e),

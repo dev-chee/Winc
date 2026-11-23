@@ -17,6 +17,7 @@ pub(super) mod format;
 pub(crate) mod hex;
 pub(super) mod hint;
 pub(crate) mod links;
+pub(crate) mod lsp;
 pub(super) mod navigation;
 pub(super) mod paste;
 pub(super) mod scrollbar;

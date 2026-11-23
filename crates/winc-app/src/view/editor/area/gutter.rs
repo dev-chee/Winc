@@ -115,10 +115,21 @@ impl Screen<'_> {
         );
         if self.doc.bookmarks().contains(row.line) {
             icons::bookmark(frame, center, self.app.palette.accent, gutter);
-        } else if self.problems.binary_search(&row.line).is_ok() {
+        } else if let Some(color) = if self.problems.binary_search(&row.line).is_ok() {
+            Some(self.app.palette.error)
+        } else {
+            self.app
+                .language_servers
+                .diagnostic_severity(self.doc, row.line)
+                .map(|severity| match severity {
+                    1 => self.app.palette.error,
+                    2 => self.app.palette.warning,
+                    _ => self.app.palette.accent,
+                })
+        } {
             let r = PROBLEM_DOT / 2.0;
             let dot = Rect::new(center.0 - r, center.1 - r, PROBLEM_DOT, PROBLEM_DOT);
-            frame.rect_clipped(dot, self.app.palette.error, r, gutter);
+            frame.rect_clipped(dot, color, r, gutter);
         }
     }
 

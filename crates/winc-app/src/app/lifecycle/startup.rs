@@ -156,6 +156,7 @@ impl App {
                 wheel: Default::default(),
                 keyed: false,
             },
+            language_servers: Default::default(),
             jumps: crate::app::editor::Jumps {
                 name_hint: None,
                 navigation: Default::default(),

@@ -260,3 +260,21 @@ hex-goto-placeholder = 0x4E or 78
 hex-goto-total = { $size } in total
 editor-readonly-hex = The hex view is read-only
 editor-definition-in-dependencies = “{ $name }” isn’t defined in the project; searching dependencies…
+editor-lsp-unavailable = Language service unavailable for this document.
+editor-lsp-loading = The language server is loading the project.
+editor-lsp-diagnostics-pending = Waiting for diagnostics for this document.
+editor-lsp-invalid-completion = The completion could not be applied.
+editor-lsp-timeout = The language server took too long to respond.
+editor-lsp-error = Language server: { $error }
+editor-lsp-no-hover = No information at the cursor.
+editor-lsp-no-completions = No completions at the cursor.
+editor-lsp-no-references = No references found.
+editor-lsp-no-diagnostics = No diagnostics for this document.
+editor-lsp-completions-count = { $count ->
+    [one] 1 completion
+   *[other] { $count } completions
+}
+editor-lsp-diagnostics-count = { $count ->
+    [one] 1 diagnostic
+   *[other] { $count } diagnostics
+}

@@ -513,6 +513,7 @@ fn draw_context(
             col: None,
             preview: text.replace('\t', "    "),
             marks,
+            lsp_range: None,
         };
         let code = Rect::new(code_x, row.y, row.right() - 12.0 - code_x, row.h);
         frame.within(area, |frame| draw_code_with(app, frame, &line, code, 1.0));

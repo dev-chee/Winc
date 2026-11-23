@@ -1,6 +1,6 @@
 //! 转到定义（`F12`、`⌘` 单击、右键菜单）和查找引用（`⇧F12`）。
 //!
-//! 不使用语言服务：定义按常见的声明写法在文本中查找（见 `winc_editor::definition`），先查当前文件，
+//! 语言服务不可用时，定义按常见的声明写法在文本中查找（见 `winc_editor::definition`），先查当前文件，
 //! 没有再在后台搜索整个项目；查找引用是全字匹配、区分大小写的全局搜索。光标本来就在定义上时，
 //! 转到定义改为列出该名字的用法：局部变量只在当前文件中找，其余在项目中全字搜索后，再在后台
 //! 按词法分析剔除注释、字符串、无关语言和其他同名定义中的命中（见 `winc_editor::usages`）。
@@ -37,6 +37,8 @@ pub struct Place {
     ///
     /// 同一行有几处用法时合并成一项，这里记下合并后的范围。
     pub marks: Vec<std::ops::Range<usize>>,
+    /// 语言服务器给出的选区，打开文件后从 UTF-16 转为编辑器的位置。
+    pub(crate) lsp_range: Option<super::lsp::LocationRange>,
 }
 
 /// 卡片中列出的内容种类。
@@ -50,6 +52,10 @@ pub enum PlacesKind {
     Bookmarks,
     /// 在文件中查找的各处匹配。
     Search,
+    /// 语言服务器的补全项。
+    Completions,
+    /// 当前文档的诊断。
+    Diagnostics,
 }
 
 impl PlacesKind {
@@ -60,6 +66,8 @@ impl PlacesKind {
             PlacesKind::Usages => t!("editor-places-usages-count", count = n),
             PlacesKind::Bookmarks => t!("editor-places-bookmarks-count", count = n),
             PlacesKind::Search => t!("editor-places-search-count", count = n),
+            PlacesKind::Completions => t!("editor-lsp-completions-count", count = n),
+            PlacesKind::Diagnostics => t!("editor-lsp-diagnostics-count", count = n),
         }
     }
 }
@@ -209,6 +217,12 @@ impl App {
     /// [`Self::show_local_usages`]），其余在项目中找（见 [`Self::show_usages`]）。光标处是重新
     /// 赋值（之前已有同名的定义）时不算在定义上，照常跳到之前的定义。
     pub(in crate::app) fn go_to_definition(&mut self) {
+        if !self.lsp_definition() {
+            self.go_to_text_definition();
+        }
+    }
+
+    pub(super) fn go_to_text_definition(&mut self) {
         let Some(name) = self.name_at_caret() else {
             return;
         };
@@ -506,6 +520,7 @@ impl App {
                         marks: name_in_preview(&m.preview, m.highlight.clone(), &name)
                             .into_iter()
                             .collect(),
+                        lsp_range: None,
                     })
             })
             .collect();
@@ -610,6 +625,10 @@ impl App {
 
     /// 打开 `place` 所在的文件，并选中其中的名字 `name`。
     pub(super) fn open_place(&mut self, place: &Place, name: &str) {
+        if let Some(range) = place.lsp_range {
+            self.open_lsp_location(&place.path, range);
+            return;
+        }
         let (line, col, name) = (place.line, place.col, name.to_owned());
         self.open_path_then(&place.path, move |app| {
             let col = col.or_else(|| {
@@ -705,7 +724,9 @@ impl App {
         // 列表已经取走，关闭面板时不保留淡出的影子：选中一项后就跳转过去，视图已经换了位置，
         // 影子没有意义。
         self.close_picker();
-        if places.kind == PlacesKind::Bookmarks {
+        if places.kind == PlacesKind::Completions {
+            self.accept_lsp_completion(i);
+        } else if places.kind == PlacesKind::Bookmarks {
             // 书签只跳转到所在行，不选中文字。
             self.jump_to(place.line, 0, 0);
         } else {
@@ -717,6 +738,12 @@ impl App {
     ///
     /// 结果显示在侧栏的搜索面板中。没有打开目录时在状态栏提示。
     pub(in crate::app) fn find_references(&mut self) {
+        if !self.lsp_references() {
+            self.find_text_references();
+        }
+    }
+
+    pub(super) fn find_text_references(&mut self) {
         if self.editor.workspace.is_none() {
             self.flash(t!("editor-open-folder-first"));
             return;
@@ -844,6 +871,7 @@ fn local_place(
         col: Some(col),
         preview,
         marks: vec![mark],
+        lsp_range: None,
     }
 }
 

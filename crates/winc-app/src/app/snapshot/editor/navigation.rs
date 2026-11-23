@@ -352,11 +352,12 @@ fn command_palette_runs_commands_and_remembers_them() {
     app.overlays.picker.input.set_text(">");
     app.picker_refresh();
     // 模块关闭时（Git）其命令不列出；开发构建没有要安装的 `winc` 命令，同样不列出；Markdown 的
-    // Markdown 的写作命令只在编辑 Markdown 时列出。
+    // 写作和语言服务命令只在支持各自功能的编辑器标签上列出。
     let installable = |a: &&crate::keymap::Action| {
         use crate::keymap::Action::{
-            InstallShellCommand, MoveToSplitDown, MoveToSplitRight, NextPane, PreviousPane,
-            UninstallShellCommand, Unsplit,
+            InstallShellCommand, LanguageCompletion, LanguageDiagnostics, LanguageHover,
+            MoveToSplitDown, MoveToSplitRight, NextPane, PreviousPane, UninstallShellCommand,
+            Unsplit,
         };
         // 窗格的命令只在拆分过、或有不止一个标签时列出。
         !a.markdown_only()
@@ -369,6 +370,9 @@ fn command_palette_runs_commands_and_remembers_them() {
                     | PreviousPane
                     | MoveToSplitRight
                     | MoveToSplitDown
+                    | LanguageCompletion
+                    | LanguageDiagnostics
+                    | LanguageHover
             )
     };
     let always = (palette().iter())

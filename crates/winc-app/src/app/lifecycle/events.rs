@@ -452,6 +452,7 @@ impl App {
             UserEvent::PickFailed(kind, error) => self.pick_failed(kind, error.as_deref()),
             UserEvent::Searched => self.poll_global(),
             UserEvent::Definitions => self.poll_definitions(),
+            UserEvent::LanguageServer => self.poll_language_servers(),
             UserEvent::FilesChanged => self.files_changed(),
             UserEvent::GitQuestion => self.poll_git_questions(),
             UserEvent::RemoteQuestion => self.poll_remote_questions(),
@@ -690,6 +691,7 @@ impl App {
             }
         }
         earliest(&mut wake, self.reading_tick(now));
+        earliest(&mut wake, self.language_server_tick(now));
         earliest(&mut wake, self.terminal_settle_tick(now));
         earliest(&mut wake, self.auto_save_tick(now));
         let copying = self.copy_tick(now);

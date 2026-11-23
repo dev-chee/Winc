@@ -40,12 +40,29 @@ pub(in crate::view) fn draw_name_hint(app: &App, frame: &mut Frame<'_>) {
     };
 
     let p = app.palette;
-    let w = frame.measure(FontKind::Ui, app.fonts.ui, &hint.text) + 2.0 * PAD;
     let right = editor.right() - SCROLLBAR_HIT - 8.0;
+    let max_width = (right - editor.x - 8.0 - 2.0 * PAD).max(0.0);
+    let above_room = top - GAP - POINTER - editor.y - 4.0;
+    let below_room = editor.bottom() - top - line_h - GAP - POINTER - 4.0;
+    let step = (app.fonts.ui + 5.0).min(HEIGHT);
+    let capacity = 1 + ((above_room.max(below_room) - HEIGHT) / step).max(0.0) as usize;
+    let mut lines: Vec<_> = hint.text.lines().take(capacity.min(9)).collect();
+    if hint.text.lines().nth(lines.len()).is_some()
+        && let Some(last) = lines.last_mut()
+    {
+        *last = "…";
+    }
+    let w = lines
+        .iter()
+        .map(|line| frame.measure(FontKind::Ui, app.fonts.ui, line))
+        .fold(0.0, f32::max)
+        .min(max_width)
+        + 2.0 * PAD;
+    let height = HEIGHT + lines.len().saturating_sub(1) as f32 * step;
     let x = (name_x - 20.0).min(right - w).max(editor.x + 8.0).round();
-    let above = top - GAP - POINTER - HEIGHT >= editor.y + 4.0;
+    let above = above_room >= height;
     let y = if above {
-        top - GAP - POINTER - HEIGHT
+        top - GAP - POINTER - height
     } else {
         top + line_h + GAP + POINTER
     };
@@ -63,7 +80,7 @@ pub(in crate::view) fn draw_name_hint(app: &App, frame: &mut Frame<'_>) {
         (None, None) => (1.0, 0.0),
     };
     let toward_name = if above { 1.0 } else { -1.0 };
-    let card = Rect::new(x, (y + toward_name * SLIDE * away).round(), w, HEIGHT);
+    let card = Rect::new(x, (y + toward_name * SLIDE * away).round(), w, height);
     let tip_x = (name_x + 6.0)
         .clamp(card.x + 16.0, (card.right() - 16.0).max(card.x + 16.0))
         .round();
@@ -71,7 +88,11 @@ pub(in crate::view) fn draw_name_hint(app: &App, frame: &mut Frame<'_>) {
     frame.with_opacity(opacity, |frame| {
         draw_card(frame, p, card, RADIUS_POPUP, p.popup_bg);
         draw_pointer(frame, p, card, tip_x, above);
-        ui_text(frame, app, card.x + PAD, card, &hint.text, p.text, card);
+        for (i, line) in lines.into_iter().enumerate() {
+            let row = Rect::new(card.x, card.y + i as f32 * step, card.w, HEIGHT);
+            let line = ellipsize(frame, line, app.fonts.ui, max_width);
+            ui_text(frame, app, card.x + PAD, row, &line, p.text, card);
+        }
     });
 }
 

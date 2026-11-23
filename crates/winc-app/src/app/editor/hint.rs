@@ -33,7 +33,15 @@ pub struct NameHint {
 impl App {
     /// 在光标所在的名字上方弹出提示 `text`；没有打开文档时改为写在状态栏。
     pub(super) fn hint_at_name(&mut self, text: impl Into<String>) {
-        let text = text.into();
+        self.name_hint(text.into(), HINT_DURATION);
+    }
+
+    /// 在光标附近展示需要多行阅读的语言服务信息。
+    pub(super) fn detail_at_name(&mut self, text: String) {
+        self.name_hint(text, Duration::from_secs(12));
+    }
+
+    fn name_hint(&mut self, text: String, duration: Duration) {
         let Some(doc) = self.editor.active() else {
             self.flash(text);
             return;
@@ -48,7 +56,7 @@ impl App {
             text,
             doc: id,
             anchor,
-            until: Instant::now() + HINT_DURATION,
+            until: Instant::now() + duration,
             fade_in,
             fade_out: None,
         });

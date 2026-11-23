@@ -102,6 +102,10 @@ impl App {
             GoToDefinition => self.go_to_definition(),
             OpenLink => self.open_caret_link(),
             FindReferences => self.find_references(),
+            LanguageCompletion => self.lsp_complete(),
+            LanguageHover => self.lsp_hover(),
+            LanguageDiagnostics => self.show_lsp_diagnostics(),
+            RestartLanguageServers => self.restart_language_servers(),
             // 有日志标签且可以后退时先在日志里后退；日志里已经找不到的提交（例如被跳过的
             // 父提交）直接跳过，继续找回更早的记录。
             GoBack if self.log_navigate(false) => {}
@@ -596,6 +600,10 @@ impl App {
     pub(in crate::app) fn action_available(&self, action: Action) -> bool {
         match action {
             Action::RunConfiguration if self.editor.root().is_none() => return false,
+            Action::LanguageCompletion => return self.lsp_action_available(true),
+            Action::LanguageHover | Action::LanguageDiagnostics => {
+                return self.lsp_action_available(false);
+            }
             // 编辑提交说明只在日志里可用；其余位置同一个键执行其他命令。
             Action::GitRewordCommit if !self.log_active() => return false,
             // 转到子提交、父提交只在日志的提交列表上可用：文件列表里 `←` 是返回。

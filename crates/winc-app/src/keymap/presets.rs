@@ -300,6 +300,7 @@ pub(super) const IDEA: &[PresetRow] = &[
     row(GoToLine, Global, &["cmd+l"], &["ctrl+g"]),
     row(GoToDefinition, Editor, &["cmd+b"], &["ctrl+b"]),
     row(FindReferences, Editor, &["alt+f7"], &["alt+f7"]),
+    row(LanguageCompletion, Editor, &["ctrl+space"], &["ctrl+space"]),
     row(
         GoBack,
         Global,
@@ -519,6 +520,7 @@ pub(super) const VSCODE: &[PresetRow] = &[
     ),
     row(GoToDefinition, Editor, &["f12"], &["f12"]),
     row(FindReferences, Editor, &["shift+f12"], &["shift+f12"]),
+    row(LanguageCompletion, Editor, &["ctrl+space"], &["ctrl+space"]),
     row(Undo, Editor, &["cmd+z"], &["ctrl+z"]),
     row(Redo, Editor, &["shift+cmd+z"], &["ctrl+y", "ctrl+shift+z"]),
     row(Cut, Editor, &["cmd+x"], &["ctrl+x"]),

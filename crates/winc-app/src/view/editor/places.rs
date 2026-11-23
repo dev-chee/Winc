@@ -227,6 +227,8 @@ fn draw_header(
         PlacesKind::Definitions => (places.name.as_str(), t!("editor-places-definitions-suffix")),
         PlacesKind::Bookmarks => (t!("editor-places-bookmarks"), ""),
         PlacesKind::Search => (places.name.as_str(), ""),
+        PlacesKind::Completions => (t!("cmd-language-completion"), ""),
+        PlacesKind::Diagnostics => (t!("cmd-language-diagnostics"), ""),
     };
     let title = ellipsize(frame, title, app.fonts.ui, (clip.right() - x) * 0.5);
     x = ui_text(frame, app, x, bar, &title, p.text, clip);
@@ -257,16 +259,19 @@ pub(in crate::view) fn draw_rows(
     // 这一列按全部条目中最宽的「文件名 + 行号」定（如果只看可见行，滚动时这一列会左右跳），
     // 最多占整行的 `LABEL_SHARE`。条目和字号不变时只量一次（`Places::widest_label`）。
     let bookmarks = view.places.kind == PlacesKind::Bookmarks;
+    let completions = view.places.kind == PlacesKind::Completions;
     // 行号写进同一个缓冲区，不必每条分配一个字符串。
     let mut number = String::new();
     let line_of = |number: &mut String, place: &Place| {
         number.clear();
-        let _ = write!(number, "{}", place.line + 1);
+        if !completions {
+            let _ = write!(number, "{}", place.line + 1);
+        }
     };
     let sizes = (app.fonts.ui, app.fonts.ui_small);
     let widest = view.places.widest_label(sizes, |items| {
         items.iter().fold(0.0, |widest: f32, place| {
-            let name = if bookmarks { "" } else { file_name(place) };
+            let name = row_label(place, bookmarks, completions);
             let name_w = frame.measure(FontKind::Ui, app.fonts.ui, name);
             let gap = if name.is_empty() { 0.0 } else { 6.0 };
             line_of(&mut number, place);
@@ -288,10 +293,12 @@ pub(in crate::view) fn draw_rows(
 
         let cy = icon_center_y(app, row, app.fonts.ui);
         let icon = (row.x + PICKER_ICON_X, cy);
-        draw_file_icon(frame, p, icon, file_name(place), clip);
+        if !completions {
+            draw_file_icon(frame, p, icon, file_name(place), clip);
+        }
 
         // 文件名平时用次要色，选中的那一行用正文色。
-        let name = if bookmarks { "" } else { file_name(place) };
+        let name = row_label(place, bookmarks, completions);
         line_of(&mut number, place);
         let line = number.as_str();
         let label_clip =
@@ -316,7 +323,19 @@ pub(in crate::view) fn draw_rows(
 
         // 按整行排版，再裁到可见的部分。
         let code = Rect::new(code_x, row.y, row.right() - 12.0 - code_x, row.h);
-        frame.within(clip, |frame| draw_code(app, frame, place, code));
+        if completions || view.places.kind == PlacesKind::Diagnostics {
+            ui_text(
+                frame,
+                app,
+                code.x,
+                row,
+                &place.preview,
+                p.text_muted,
+                code.intersect(clip),
+            );
+        } else {
+            frame.within(clip, |frame| draw_code(app, frame, place, code));
+        }
     }
 }
 
@@ -441,4 +460,14 @@ fn file_name(place: &Place) -> &str {
         .relative
         .rsplit_once('/')
         .map_or(place.relative.as_str(), |(_, name)| name)
+}
+
+fn row_label(place: &Place, bookmarks: bool, completions: bool) -> &str {
+    if completions {
+        &place.relative
+    } else if bookmarks {
+        ""
+    } else {
+        file_name(place)
+    }
 }

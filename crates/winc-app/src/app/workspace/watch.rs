@@ -271,6 +271,7 @@ impl App {
         }
 
         self.run_configs_changed(changes.rescan, &changes.paths);
+        self.language_server_disk_changes(&changes.paths, changes.rescan);
         self.sync_documents(|path| changes.rescan || changes.paths.iter().any(|p| p == path));
         // 全局搜索只重搜变化涉及的文件：打开的目录较大（例如整个主目录）时，其他程序持续写入，
         // 每次都全部重搜的开销过大。只有系统报告丢失通知（`rescan`）时才全部重搜。

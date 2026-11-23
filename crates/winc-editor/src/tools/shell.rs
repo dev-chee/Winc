@@ -141,6 +141,39 @@ impl Shell {
             .env("NO_COLOR", "1");
         command
     }
+
+    /// 让 Cargo 从包清单定位实际工作区清单。找不到 Cargo 或查询失败时返回 None；应在后台调用。
+    pub fn cargo_workspace_manifest(&self, manifest: &Path) -> Option<PathBuf> {
+        let cargo = self.find("cargo")?;
+        let mut command = self.command(&cargo);
+        command
+            .current_dir(manifest.parent()?)
+            .args([
+                "locate-project",
+                "--workspace",
+                "--message-format",
+                "plain",
+                "--manifest-path",
+            ])
+            .arg(manifest)
+            .stderr(std::process::Stdio::null());
+        let output = process::run(
+            &mut command,
+            Vec::new(),
+            std::time::Duration::from_secs(5),
+            &Cancel::default(),
+        )
+        .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let path = PathBuf::from(
+            std::str::from_utf8(&output.stdout)
+                .ok()?
+                .trim_end_matches(['\r', '\n']),
+        );
+        path.is_absolute().then(|| crate::canonical_path(&path))
+    }
 }
 
 /// 返回环境 `vars` 中 `PATH` 的值。
