@@ -790,6 +790,8 @@ const TEXT_EXTENSIONS: &[&str] = &[
     "tf",
     "tftest",
     "tfvars",
+    "tl",
+    "tli",
     "toml",
     "tpp",
     "ts",

@@ -220,6 +220,8 @@ LangString OpenFolderVerb ${LANG_SIMPCHINESE} "在 Winc 中打开"
   !insertmacro ${Action} TF code
   !insertmacro ${Action} TFTEST code
   !insertmacro ${Action} TFVARS code
+  !insertmacro ${Action} TL code
+  !insertmacro ${Action} TLI code
   !insertmacro ${Action} TOML config
   !insertmacro ${Action} TPP c
   !insertmacro ${Action} TS typescript

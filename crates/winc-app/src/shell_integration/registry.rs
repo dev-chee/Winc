@@ -162,6 +162,8 @@ pub(super) const FILE_TYPES: &[&str] = &[
     "TF",
     "TFTEST",
     "TFVARS",
+    "TL",
+    "TLI",
     "TOML",
     "TPP",
     "TS",
