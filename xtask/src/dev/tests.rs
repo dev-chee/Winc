@@ -12,8 +12,8 @@ fn member(name: &str, dir: &str, deps: &[&str]) -> Member {
 
 #[test]
 fn changes_pull_in_the_crates_that_depend_on_them() {
-    // 依赖链为 `winc-core` ← `winc-editor` ← {`winc-app`, `xtask`}；`winc-render` 不依赖任何包。
     let members = [
+        member("winc", "", &["winc-app"]),
         member("winc-app", "crates/winc-app", &["winc-editor", "winc-core"]),
         member("winc-core", "crates/winc-core", &[]),
         member("winc-editor", "crates/winc-editor", &["winc-core"]),
@@ -28,20 +28,27 @@ fn changes_pull_in_the_crates_that_depend_on_them() {
         affected(&["crates/winc-render/src/lib.rs"]),
         ["winc-render"]
     );
-    assert_eq!(affected(&["crates/winc-app/src/app.rs"]), ["winc-app"]);
+    assert_eq!(
+        affected(&["crates/winc-app/src/app.rs"]),
+        ["winc", "winc-app"]
+    );
     assert_eq!(
         affected(&["crates/winc-core/src/text.rs"]),
-        ["winc-app", "winc-core", "winc-editor", "xtask"]
+        ["winc", "winc-app", "winc-core", "winc-editor", "xtask"]
     );
+    assert_eq!(affected(&["src/main.rs"]), ["winc"]);
+    assert_eq!(affected(&["build_icon.rs"]), ["winc"]);
     assert!(affected(&["docs/GIT.md"]).is_empty());
-    // 根目录的 `Cargo.lock`、`VERSION` 变了时全部 5 个包都要测。
-    assert_eq!(affected(&["Cargo.lock"]).len(), 5);
-    assert_eq!(affected(&["VERSION"]).len(), 5);
+    assert_eq!(affected(&["Cargo.lock"]).len(), members.len());
+    assert_eq!(affected(&["VERSION"]).len(), members.len());
 }
 
 #[test]
 fn workspace_dependencies_follow_the_layers() {
     let members = members(&root()).unwrap();
+    let winc = members.iter().find(|member| member.name == "winc").unwrap();
+    assert!(winc.dir.as_os_str().is_empty());
+    assert_eq!(winc.deps, ["winc-app"]);
     assert_eq!(layer_violations(&members), Vec::<String>::new());
     // 未登记的依赖会被报告。
     let extra = [member("winc-core", "crates/winc-core", &["winc-render"])];
@@ -53,6 +60,14 @@ fn source_files_stay_within_the_size_limit() {
     let root = root();
     let sizes = source_sizes(&root, &members(&root).unwrap()).unwrap();
     assert_eq!(size_violations(&sizes), Vec::<String>::new());
+    for source in [
+        "src/main.rs",
+        "build.rs",
+        "build_icon.rs",
+        "xtask/src/main.rs",
+    ] {
+        assert_eq!(sizes.iter().filter(|(path, _)| path == source).count(), 1);
+    }
 
     // 正好达到上限的文件合规，超过一行即报告。
     let sizes = [

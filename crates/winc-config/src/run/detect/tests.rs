@@ -345,7 +345,7 @@ fn workspaces_list_their_runnable_members() {
     );
 }
 
-/// `default-members` 只有一个可运行的成员时可以直接 `cargo run`，这也是 Winc 自己的写法。
+/// 虚拟 workspace 的 `default-members` 只有一个可运行的成员时可以直接 `cargo run`。
 #[test]
 fn default_members_allow_a_plain_cargo_run() {
     let app = MEMBER.replace("NAME", "pkg-app");

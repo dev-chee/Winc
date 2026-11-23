@@ -21,6 +21,20 @@ struct Member {
     deps: Vec<String>,
 }
 
+/// 根包的源码和构建脚本。
+fn root_source(path: &Path) -> bool {
+    [
+        "src",
+        "tests",
+        "examples",
+        "benches",
+        "build.rs",
+        "build_icon.rs",
+    ]
+    .iter()
+    .any(|source| path.starts_with(source))
+}
+
 /// 各 crate 允许依赖的 workspace 内的包；未列出的 crate 不允许依赖任何内部包。
 ///
 /// 依赖只能指向更底层的 crate：`winc-backend` 不依赖任何内部包，`winc-core`、`winc-render`
@@ -107,6 +121,9 @@ fn source_sizes(root: &Path, members: &[Member]) -> Result<Vec<(String, usize)>,
             .map_err(|e| format!("无法读取 {}：{e}", dir.display()))?;
         for entry in entries.flatten() {
             let path = dir.join(entry.file_name());
+            if dir.as_os_str().is_empty() && !root_source(&path) {
+                continue;
+            }
             if root.join(&path).is_dir() {
                 scan(root, &path, sizes)?;
             } else if path.extension().is_some_and(|e| e == "rs") {
@@ -159,6 +176,9 @@ fn clippy_violations(root: &Path, members: &[Member]) -> Result<(Vec<String>, us
     let base = clippy_settings(&base);
     let (mut violations, mut copies) = (Vec::new(), 0);
     for member in members {
+        if member.dir.as_os_str().is_empty() {
+            continue;
+        }
         let path = member.dir.join("clippy.toml");
         if root.join(&path).is_file() {
             let copy = read(&path)?;
@@ -188,10 +208,9 @@ fn layer_violations(members: &[Member]) -> Vec<String> {
     violations
 }
 
-/// 读出 workspace 的成员：`crates/` 下的每个目录和 `xtask`。
+/// 读出 workspace 的成员：根包、`crates/` 下的各个包和 `xtask`。
 ///
-/// 依赖取每行第一个以 `winc-` 开头、且不同于包自身的标识符；写成 `名字.workspace = true` 或
-/// `名字 = …` 都能识别。
+/// 从包的依赖表读取以 `winc-` 开头的依赖，支持 `名字.workspace = true` 和 `名字 = …`。
 ///
 /// # Errors
 ///
@@ -203,23 +222,39 @@ fn members(root: &Path) -> Result<Vec<Member>, String> {
         .map(|e| PathBuf::from("crates").join(e.file_name()))
         .filter(|d| root.join(d).join("Cargo.toml").is_file())
         .collect();
+    dirs.push(PathBuf::new());
     dirs.push(PathBuf::from("xtask"));
     dirs.sort();
 
     let mut members = Vec::new();
     for dir in dirs {
-        let manifest = std::fs::read_to_string(root.join(&dir).join("Cargo.toml"))
-            .map_err(|e| format!("无法读取 {}/Cargo.toml：{e}", dir.display()))?;
+        let path = dir.join("Cargo.toml");
+        let manifest = std::fs::read_to_string(root.join(&path))
+            .map_err(|e| format!("无法读取 {}：{e}", path.display()))?;
         let name = manifest
             .lines()
             .find_map(|l| l.trim().strip_prefix("name = "))
             .map(|n| n.trim_matches('"').to_owned())
-            .ok_or_else(|| format!("{}/Cargo.toml 里没有包名", dir.display()))?;
+            .ok_or_else(|| format!("{} 里没有包名", path.display()))?;
+        let mut in_dependencies = false;
         let deps = manifest
             .lines()
+            .map(str::trim)
             .filter_map(|l| {
-                let key = l.split(['=', '.', ' ']).next()?.trim();
-                (key.starts_with("winc-") && key != name).then(|| key.to_owned())
+                if let Some((table, _)) = l.strip_prefix('[').and_then(|l| l.split_once(']')) {
+                    let table = if table.starts_with("target.") {
+                        table.rsplit('.').next().unwrap_or(table)
+                    } else {
+                        table
+                    };
+                    in_dependencies = matches!(
+                        table,
+                        "dependencies" | "dev-dependencies" | "build-dependencies"
+                    );
+                    return None;
+                }
+                let key = l.split(['=', '.', ' ']).next()?;
+                (in_dependencies && key.starts_with("winc-") && key != name).then(|| key.to_owned())
             })
             .collect();
         members.push(Member { name, dir, deps });
@@ -282,7 +317,13 @@ fn affected(members: &[Member], changed: &[PathBuf]) -> Vec<String> {
     }
     let mut chosen: HashSet<&str> = members
         .iter()
-        .filter(|m| changed.iter().any(|f| f.starts_with(&m.dir)))
+        .filter(|m| {
+            if m.dir.as_os_str().is_empty() {
+                changed.iter().any(|f| root_source(f))
+            } else {
+                changed.iter().any(|f| f.starts_with(&m.dir))
+            }
+        })
         .map(|m| m.name.as_str())
         .collect();
     // 反复把依赖了已选包的包加进来，直到不再变化，得到依赖链上的全部包。

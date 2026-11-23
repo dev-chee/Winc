@@ -9,7 +9,7 @@ use std::path::Path;
 /// 图标组的资源编号，运行时按此编号加载窗口图标（见 `App::resumed`）。
 const ICON_GROUP: u16 = 1;
 /// 应用图标的路径，相对于本 crate 的目录。
-const ICO: &str = "../winc-app/assets/winc.ico";
+const ICO: &str = "crates/winc-app/assets/winc.ico";
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");

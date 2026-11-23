@@ -285,6 +285,7 @@ fn parse_call(rest: &str, at: String) -> Call {
 fn source_calls_match_the_catalog() {
     let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let mut calls = Vec::new();
+    calls_in(&crates.parent().unwrap().join("src"), &mut calls);
     for entry in std::fs::read_dir(crates).unwrap() {
         let src = entry.unwrap().path().join("src");
         if src.is_dir() {

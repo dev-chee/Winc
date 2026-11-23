@@ -1,7 +1,22 @@
+[package]
+name = "winc"
+description = "winc 可执行文件的入口，程序的实现在 winc-app 中。"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+winc-app.workspace = true
+
+[lints]
+workspace = true
+
 [workspace]
 resolver = "3"
 members = ["crates/*", "xtask"]
-default-members = ["crates/winc"]
 
 [workspace.package]
 edition = "2024"
@@ -129,7 +144,7 @@ panic = "abort"
 opt-level = "s"
 
 # 应用层按体积优化（二进制小约 0.7 MB）：其中是事件处理、命令、布局和各界面的绘制；逐像素合成、
-# 文本存储、语法高亮、查找在各自的 crate 中，级别不变。可执行文件单独在 `winc` crate 中：
+# 文本存储、语法高亮、查找在各自的 crate 中，级别不变。可执行文件的入口在根包 `winc` 中：
 # 链接时优化的流程由可执行 crate 的级别决定，该 crate 设为 `"s"` 时二进制反而增大。
 [profile.release.package.winc-app]
 opt-level = "s"
