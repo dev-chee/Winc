@@ -21,7 +21,6 @@ pub(crate) use command::VimList;
 use host::{Clip, Deferred, DocHost, View, visible_lines};
 use winit::event::KeyEvent;
 use winit::keyboard::{Key, ModifiersState, NamedKey, PhysicalKey};
-use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
 
 use crate::app::{App, Focus, PromptKind};
 use winc_render::Rect;
@@ -623,7 +622,7 @@ impl App {
         }
         let key = convert(
             &event.logical_key,
-            &event.key_without_modifiers(),
+            &crate::system::key_without_modifiers(event),
             event.physical_key,
             self.pointer.modifiers,
             mode != Mode::Insert,
@@ -729,7 +728,7 @@ impl App {
     fn vim_places_caret(&self, event: &KeyEvent) -> bool {
         let key = convert(
             &event.logical_key,
-            &event.key_without_modifiers(),
+            &crate::system::key_without_modifiers(event),
             event.physical_key,
             self.pointer.modifiers,
             true,

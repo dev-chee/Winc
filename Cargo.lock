@@ -62,6 +62,7 @@ dependencies = [
  "ndk-context",
  "ndk-sys",
  "num_enum",
+ "simd_cesu8",
  "thiserror 2.0.21",
 ]
 
@@ -3168,6 +3169,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "winc-android"
+version = "0.0.0"
+dependencies = [
+ "jni",
+ "winc-app",
+ "winit",
+]
+
+[[package]]
 name = "winc-app"
 version = "0.0.0"
 dependencies = [
@@ -3175,6 +3185,7 @@ dependencies = [
  "block2 0.6.2",
  "ed25519-dalek",
  "globset",
+ "jni",
  "libc",
  "notify",
  "objc2 0.6.5",
@@ -3650,8 +3661,6 @@ checksum = "d6bbff5f0aada427a1e5a6da5f1f98158182f26556f345ac9e04d36d0ebed650"
 [[package]]
 name = "winit"
 version = "0.30.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6755fa58a9f8350bd1e472d4c3fcc25f824ec358933bba33306d0b63df5978d"
 dependencies = [
  "ahash",
  "android-activity",

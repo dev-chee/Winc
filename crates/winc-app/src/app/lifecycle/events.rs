@@ -80,7 +80,7 @@ impl ApplicationHandler<UserEvent> for App {
         }
         // Wayland 的 app_id 和 X11 的 WM_CLASS 取自窗口名称，需与桌面项 `winc.desktop` 一致：
         // 任务栏、停靠栏据此找到图标并归组，窗口规则据此匹配。未设置时 Wayland 不上报 app_id。
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         {
             use winit::platform::startup_notify::WindowAttributesExtStartupNotify;
             use winit::platform::wayland::WindowAttributesExtWayland;
@@ -193,6 +193,7 @@ impl ApplicationHandler<UserEvent> for App {
             self.touch.window_input = crate::windows::WindowInput::new(&window);
         }
         self.note_window_frame();
+        #[cfg(not(target_os = "android"))]
         window.set_ime_allowed(true);
         #[cfg(target_os = "macos")]
         {
@@ -293,6 +294,14 @@ impl ApplicationHandler<UserEvent> for App {
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserEvent) {
         self.handle_event(event);
+    }
+
+    #[cfg(target_os = "android")]
+    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
+        self.android_suspend();
+        self.frame.renderer = None;
+        self.window.handle = None;
+        self.frame.next_frame = None;
     }
 
     fn window_event(&mut self, _event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
@@ -447,8 +456,10 @@ impl App {
     /// 提示框由窗口自行绘制时，选中按钮的事件同样直接交给此处。
     pub(in crate::app) fn handle_event(&mut self, event: UserEvent) {
         match event {
+            #[cfg(target_os = "android")]
+            UserEvent::Android(event) => self.android_event(event),
             UserEvent::Picked(kind, path) => self.on_picked(kind, path),
-            #[cfg(all(unix, not(target_os = "macos")))]
+            #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
             UserEvent::PickFailed(kind, error) => self.pick_failed(kind, error.as_deref()),
             UserEvent::Searched => self.poll_global(),
             UserEvent::Definitions => self.poll_definitions(),

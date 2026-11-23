@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Winc</string>
+    <string name="open">Open</string>
+    <string name="save">Save</string>
+    <string name="keyboard">Keyboard</string>
+    <string name="undo">Undo</string>
+    <string name="more">More</string>
+    <string name="export_draft">Save a copy…</string>
+    <string name="export_original">Export last saved version…</string>
+</resources>

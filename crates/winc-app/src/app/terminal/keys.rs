@@ -216,7 +216,7 @@ impl App {
         }
         let (modes, keyboard) = (tab.modes, tab.keyboard);
         let ctrl_v = self.pointer.modifiers == winit::keyboard::ModifiersState::CONTROL
-            && matches!(event.key_without_modifiers(), Key::Character(c)
+            && matches!(crate::system::key_without_modifiers(event), Key::Character(c)
                 if c.chars().next().is_some_and(|c| latin(c, event.physical_key) == 'v'));
         if ctrl_v && self.ctrl_v_uploads() {
             return;
@@ -345,7 +345,7 @@ impl App {
             _ if mods.ctrl || mods.alt => {
                 // ⌃、Meta 要的是键上的字符：⌥ 已经把它变成了别的字（⌥b 是 ∫），用不含修饰键的
                 // 那个，再补上 ⇧。
-                let Key::Character(base) = event.key_without_modifiers() else {
+                let Key::Character(base) = crate::system::key_without_modifiers(event) else {
                     return None;
                 };
                 let c = latin(base.chars().next()?, event.physical_key);

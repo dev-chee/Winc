@@ -8,7 +8,6 @@ use std::time::Instant;
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::{ElementState, Ime, KeyEvent};
 use winit::keyboard::{Key, KeyLocation, NamedKey, PhysicalKey};
-use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
 
 use winc_core::Selection;
 use winc_editor::{Command, EntryKind, segment_name};
@@ -45,7 +44,7 @@ impl App {
         } else {
             m.control_key()
         };
-        let base = match event.key_without_modifiers() {
+        let base = match crate::system::key_without_modifiers(event) {
             Key::Character(s) => s.to_lowercase(),
             _ => String::new(),
         };
@@ -1269,7 +1268,9 @@ impl App {
         if self.ime.allowed != Some(allowed)
             && let Some(window) = &self.window.handle
         {
-            window.set_ime_allowed(allowed);
+            if !cfg!(target_os = "android") {
+                window.set_ime_allowed(allowed);
+            }
             self.ime.allowed = Some(allowed);
             // 重新启用后再告知一次候选窗的位置。
             self.ime.last_area = None;

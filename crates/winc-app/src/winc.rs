@@ -107,6 +107,7 @@ pub enum UpdateState {
     #[default]
     Off,
     /// 可以检查，这次运行还没有检查过。
+    #[cfg_attr(target_os = "android", allow(dead_code))]
     Idle,
     /// 正在检查。
     Checking,
@@ -871,6 +872,12 @@ impl Winc {
 }
 
 impl ApplicationHandler<Envelope> for Winc {
+    #[cfg(target_os = "android")]
+    fn suspended(&mut self, event_loop: &ActiveEventLoop) {
+        for slot in &mut self.windows {
+            slot.app.suspended(event_loop);
+        }
+    }
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         for slot in &mut self.windows {
             slot.app.resumed(event_loop);
@@ -959,6 +966,10 @@ impl ApplicationHandler<Envelope> for Winc {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        #[cfg(target_os = "android")]
+        for slot in &mut self.windows {
+            slot.app.android_sync_input(false);
+        }
         let wake = self.next_wake();
         let ask = self.windows.iter().any(|slot| slot.app.asks_before_quit());
         self.shared.ask_on_quit.store(ask, Ordering::Relaxed);

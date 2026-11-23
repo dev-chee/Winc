@@ -1288,6 +1288,50 @@ impl Candidates {
                 .collect(),
                 emoji: 2,
             }
+        } else if cfg!(target_os = "android") {
+            mono.extend(paths(&[
+                "/system/fonts/RobotoMono-Regular.ttf",
+                "/system/fonts/DroidSansMono.ttf",
+                "/system/fonts/Roboto-Regular.ttf",
+            ]));
+            ui_paths.extend(paths(&[
+                "/system/fonts/Roboto-Regular.ttf",
+                "/system/fonts/Roboto-Regular.otf",
+                "/system/fonts/RobotoFlex-Regular.ttf",
+            ]));
+            let cjk_face = match cjk_language().as_str() {
+                "ja" => "JP",
+                "ko" => "KR",
+                "zh-tw" => "TC",
+                "zh-hk" => "HK",
+                _ => "SC",
+            };
+            let cjk = FontFile {
+                path: PathBuf::from("/system/fonts/NotoSansCJK-Regular.ttc"),
+                postscript: Some(format!("NotoSansCJK{cjk_face}-Regular")),
+            };
+            Candidates {
+                mono,
+                ui: ui_paths,
+                math: Vec::new(),
+                fallbacks: vec![
+                    Choices {
+                        query: None,
+                        files: vec![
+                            cjk,
+                            FontFile::first("/system/fonts/NotoSansCJK-Regular.ttc"),
+                            FontFile::first("/system/fonts/DroidSansFallback.ttf"),
+                        ],
+                        probe: Some('中'),
+                    },
+                    Choices {
+                        query: None,
+                        files: paths(&["/system/fonts/NotoColorEmoji.ttf"]),
+                        probe: Some('😀'),
+                    },
+                ],
+                emoji: 1,
+            }
         } else {
             // Linux 先查询 fontconfig：它记录了发行版安装字体的位置，也按用户设置的偏好选择；没有
             // fontconfig 的精简系统再试后面这些常见的位置。等宽字体和界面字体启动时就要用到，因此

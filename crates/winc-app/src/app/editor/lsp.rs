@@ -200,6 +200,9 @@ fn candidate(doc: &Document) -> Option<(&Path, Server, &'static str)> {
 impl App {
     /// 检查文档打开、关闭、改名及编辑，合并连续键入，并安排下一次同步。
     pub(in crate::app) fn language_server_tick(&mut self, now: Instant) -> Option<Instant> {
+        if cfg!(target_os = "android") {
+            return None;
+        }
         self.link.proxy.as_ref()?;
         self.sync_lsp(now, None);
         if let Some(deferred) = self.language_servers.deferred.take()

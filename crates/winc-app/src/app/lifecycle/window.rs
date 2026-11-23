@@ -132,10 +132,10 @@ impl App {
         self.show_window();
         if let Some(window) = &self.window.handle {
             window.set_minimized(false);
-            #[cfg(all(unix, not(target_os = "macos")))]
+            #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
             let activated = (self.opening.activation.take())
                 .is_some_and(|token| crate::wayland::activate(window, token));
-            #[cfg(not(all(unix, not(target_os = "macos"))))]
+            #[cfg(not(all(unix, not(any(target_os = "macos", target_os = "android")))))]
             let activated = false;
             if !activated {
                 window.focus_window();
@@ -147,11 +147,11 @@ impl App {
     /// 记下新启动的 winc 交来的激活令牌 `token`（见 [`crate::instance::launch_token`]），在下一次
     /// 建系统窗口或切到前台时使用一次。不使用 X11、Wayland 的平台上忽略。
     pub(crate) fn set_activation(&mut self, token: Option<String>) {
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         {
             self.opening.activation = token.map(winit::window::ActivationToken::from_raw);
         }
-        #[cfg(not(all(unix, not(target_os = "macos"))))]
+        #[cfg(not(all(unix, not(any(target_os = "macos", target_os = "android")))))]
         let _ = token;
     }
 
@@ -692,7 +692,7 @@ impl App {
         self.declare_base(&mut renderer);
         // Wayland 上随本帧向合成器请求帧回调：之后的重画在合成器发出帧回调后进行，动画跟随
         // 合成器的刷新，而不是计时器。本帧在 `renderer.draw` 中绘制并提交，因此在调用它之前请求。
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "android"))))]
         if let Some(window) = &self.window.handle {
             window.pre_present_notify();
         }
@@ -735,6 +735,12 @@ impl App {
         self.update_ime_area();
         self.after_terminal_frame();
         self.frame.presented += 1;
+        #[cfg(target_os = "android")]
+        if let (Some(started), Some(activity)) =
+            (self.android.started.take(), &self.android.activity)
+        {
+            activity.first_frame(started.elapsed().as_millis().try_into().unwrap_or(i64::MAX));
+        }
 
         let loading = self.editor.active().is_some_and(|d| d.is_pending());
         let next = (self.frame.bench).on_present(self.frame.presented, elapsed, loading);

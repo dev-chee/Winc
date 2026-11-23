@@ -1,7 +1,11 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "xtask"]
+exclude = ["vendor/winit"]
 default-members = ["crates/winc"]
+
+[patch.crates-io]
+winit = { path = "vendor/winit" }
 
 [workspace.package]
 edition = "2024"
