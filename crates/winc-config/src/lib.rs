@@ -8,6 +8,7 @@ mod config;
 pub mod files;
 mod font;
 mod json;
+mod project;
 mod run;
 mod state;
 mod version;
@@ -19,10 +20,15 @@ pub use config::{
 };
 pub use font::{FontRequest, font_list, resolve_font, resolve_font_list};
 pub use json::Json;
+pub use project::{
+    PROJECT_EXTENSION, PROJECT_EXTENSIONS, ProjectError, ProjectFolder, ProjectKind, idea_folders,
+    is_project_file, parse_project, project_kind, read_project, write_project,
+};
 pub use run::{
     RunConfig, affects_detected_configs, create_run_configs, detected_run_configs,
     load_run_configs, run_configs_path,
 };
+pub use state::writer as state_writer;
 pub use state::{
     BADGE_COLORS, FilePlace, MAX_COMMIT_MESSAGES, MAX_PLACES, MAX_RECENT, MAX_RECENT_FILES,
     MAX_SESSIONS, PaneNode, RECENT_IN_MENU, Session, SessionPane, SessionPanes, State, Tab,

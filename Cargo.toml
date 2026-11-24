@@ -24,7 +24,7 @@ exclude = ["vendor/winit"]
 winit = { path = "vendor/winit" }
 
 [workspace.package]
-version = "0.1.890"
+version = "0.1.938"
 edition = "2024"
 rust-version = "1.89"
 publish = false

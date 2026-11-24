@@ -425,7 +425,7 @@ pub fn test(args: &[String]) -> Result<bool, String> {
 
 /// `cargo xtask tidy`：删除 `target/debug/deps` 中已没有被任何可执行文件引用的 `.rcgu.o`。
 ///
-/// 仅在 macOS 上执行，其他平台直接返回。当前的可执行文件引用的目标文件保留，崩溃时的调用栈和
+/// 仅在 macOS 上执行，其他平台直接返回。当前的可执行文件引用的目标文件保留，进程中止时的调用栈和
 /// 调试器需要使用。
 ///
 /// # Errors

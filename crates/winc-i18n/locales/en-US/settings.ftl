@@ -151,12 +151,15 @@ settings-git-auto-fetch = Auto Fetch
 settings-git-tree = Show Changes as Tree
 settings-git-remember-credentials = Remember Passwords
 settings-git-confirm-push = Confirm Before Pushing
-settings-git-staging-area = Staging Area
+settings-git-staging-area = Staging Area Layout
 settings-terminal-prompt = Winc Prompt
 settings-terminal-shell-integration = Shell Integration
 settings-terminal-application-priority = Terminal Application Priority
 settings-terminal-option-as-meta = Meta Key
 settings-key-search = Search Shortcuts
+settings-key-matches = Command Shortcuts
+settings-key-matches-desc = Commands whose name or keys match the search
+settings-key-matches-show = Show { $count }
 
 ## Setting descriptions.
 
@@ -188,7 +191,7 @@ settings-git-pull-rebase = Rebase
 settings-git-pull-desc = Merge or rebase upstream commits when pulling and syncing
 settings-git-open-worktree-desc = Which window a clicked worktree opens in
 settings-drop-folder = Dropped Folders
-settings-drop-folder-add = Add to Window
+settings-drop-folder-add = Add to Project
 settings-drop-folder-open = Don’t Add
 settings-drop-folder-desc = When not added, a folder opens from the editor area and is copied from the file tree
 settings-find-in-files = Find in Files
@@ -250,6 +253,11 @@ settings-updates-ready = { $platform ->
    *[other] { $version } is installed. Restart Winc to use it.
 }
 settings-updates-install-failed = Couldn’t install the update: { $error }
+settings-updates-error-location = Couldn’t tell where Winc is installed
+settings-updates-error-write = Couldn’t write to “{ $path }”: { $error }
+settings-updates-error-tool = Couldn’t run curl or wget: { $error }
+settings-updates-error-size = The download has the wrong size ({ $expected } bytes expected, { $actual } received)
+settings-updates-error-signature = The signature of the download does not match
 settings-format-on-save-desc = Format files with the chosen formatter before saving
 settings-fix-on-save-desc = Fix problems that lint tools can fix before saving
 settings-skip-on-save-desc = Skip fixing and formatting files in these languages on save
@@ -260,7 +268,7 @@ settings-git-auto-fetch-desc = Fetch from remotes in the background every 3 minu
 settings-git-tree-desc = Group changes by folder; when off, list every file
 settings-git-remember-credentials-desc = Keep verified HTTPS passwords in the system keychain; turning this off removes the saved ones
 settings-git-confirm-push-desc = List the target repository and outgoing commits before pushing
-settings-git-staging-area-desc = Choose changes to commit with the staging area; when off, with checkboxes
+settings-git-staging-area-desc = List staged and unstaged changes in separate groups and choose what to commit by staging; when off, with checkboxes
 settings-terminal-module-desc-key = Terminal panel below the editor ({ $key }); starts a helper process when opened
 settings-terminal-module-desc = Terminal panel below the editor; starts a helper process when opened
 settings-remote-module-desc = Open folders on remote hosts over SSH, running a server process on the host while connected (experimental)

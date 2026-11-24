@@ -232,7 +232,7 @@ impl App {
                     .filter(|p| tools.iter().any(|t| t == p.program()))
                     .map(|p| p.name)
                     .collect();
-                // 按钮上已经写着该工具时，不再重复它的名字。
+                // 按钮上已经显示该工具时，不再重复它的名字。
                 let warning = if names == [tool.as_str()] {
                     t!("format-tool-not-installed").to_owned()
                 } else {
@@ -353,6 +353,8 @@ impl App {
             Setting::TerminalShell => (MenuTarget::DefaultShell, row.control),
             Setting::GitPath | Setting::LatexPath => return self.settings_start_editing(setting),
             Setting::Updates => return self.settings_check_updates(),
+            Setting::Keymap => return self.open_keymap_menu_at(row.control),
+            Setting::KeyMatches => return self.show_key_matches(),
             _ => return,
         };
         self.settings.selected = setting;

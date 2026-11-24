@@ -12,6 +12,9 @@ use crate::app::git::form::FormKind;
 use crate::keymap::Action;
 use winc_pty::protocol::Modes;
 
+mod diff;
+mod project;
+
 /// 在本进程内启动服务端并登记为到 `name` 的连接：该目标的虚拟路径指向本机的同名路径。
 fn loopback(name: &str) -> winc_backend::Target {
     let (requests, to_server) = std::io::pipe().unwrap();
@@ -52,6 +55,7 @@ fn a_folder_on_a_connected_host_opens_as_the_workspace() {
     // 测试线程相当于界面线程：不允许等待远端的应答，后台任务就地执行时除外。
     remote::forbid_blocking();
     folders_on_a_remote_host_are_not_taken_for_files();
+    diff::a_remote_diff_keeps_its_working_tree_side();
     crumb_menus_on_a_remote_host_list_the_folder();
     features_work_in_a_remote_workspace();
     clipboard_images_pasted_into_a_remote_terminal_are_sent_there_first();
@@ -71,7 +75,7 @@ fn a_folder_on_a_connected_host_opens_as_the_workspace() {
     assert!(app.overlays.picker.open && app.overlays.picker.remote.is_some());
     app.close_picker();
 
-    // 模块开着时，状态栏上终端开关的左边有连接的按钮，点了打开面板。
+    // 模块开着时，状态栏上终端开关的左边有连接的按钮，点击打开面板。
     paint(&mut app);
     let remote_button = crate::app::StatusItem::Remote;
     assert!(
@@ -528,6 +532,7 @@ fn a_folder_on_a_connected_host_opens_as_the_workspace() {
     local_only_actions_are_not_offered_on_a_remote_host();
     files_copied_in_a_remote_tree_are_pasted_there();
     remote_items_download_to_this_computer();
+    project::remote_folders_are_added_and_saved_as_a_project();
 }
 
 /// 截图：开始页、主机面板、目录面板（浏览与筛选）和打开远端目录后的窗口。
@@ -819,7 +824,7 @@ fn crumb_menus_on_a_remote_host_list_the_folder() {
     paint(&mut app);
 
     // 尚未读取的远端目录只有一行说明，不在界面线程上读取。
-    let level = folder_level(&root, &file);
+    let level = folder_level(&root);
     assert_eq!(level.loading, Some((root.clone(), false)));
     assert_eq!(level.rows.len(), 1);
 
@@ -1151,7 +1156,7 @@ fn clipboard_images_pasted_into_a_remote_terminal_are_sent_there_first() {
     assert_eq!(std::fs::read(&path).unwrap(), png);
 
     // ⌃V：有程序运行、在主屏上、开启了括号粘贴时同样先传再粘贴路径。shell 的提示符下（⌃V 是
-    // 逐字输入）、备用屏上的程序（vim 的 ⌃V 是列选择）和剪贴板里只有文字时照常发给程序。
+    // 逐字输入）、备用屏上的程序（vim 的 ⌃V 是列选择）和剪贴板里只有文字时仍然发给程序。
     app.clipboard.copied = None;
     app.clipboard.copied_files.clear();
     app.clipboard.copied_image = Some(png.clone());
@@ -1204,7 +1209,7 @@ fn clipboard_images_pasted_into_a_remote_terminal_are_sent_there_first() {
     let notice = app.notice.text.take().unwrap();
     assert!(notice.contains("太大"), "{notice}");
 
-    // 本机的终端不变：仍是一次空的括号粘贴，由程序自己读剪贴板；⌃V 也照常发给程序。
+    // 本机的终端不变：仍是一次空的括号粘贴，由程序自己读剪贴板；⌃V 也仍然发给程序。
     app.clipboard.copied_files.clear();
     app.clipboard.copied_image = Some(png);
     app.terminal.tab_mut().unwrap().cwd = dir.as_os_str().as_bytes().to_vec();
@@ -1243,7 +1248,7 @@ fn local_only_actions_are_not_offered_on_a_remote_host() {
             })
             .collect()
     };
-    // 终端模块关闭：两项都不列出；开启后「在终端中打开」进入内置终端，照常列出。
+    // 终端模块关闭：两项都不列出；开启后「在终端中打开」进入内置终端，仍然列出。
     for terminal in [false, true] {
         app.config.terminal_enabled = Some(terminal);
         let tree = listed(&mut app, MenuTarget::Tree(Some(file.clone())));
@@ -1317,12 +1322,9 @@ fn local_only_actions_are_not_offered_on_a_remote_host() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// 远端工作区的文件树里复制、剪切文件，再粘贴到同一工作区。由
-/// [`a_folder_on_a_connected_host_opens_as_the_workspace`] 调用，原因同
-/// [`folders_on_a_remote_host_are_not_taken_for_files`]。
-///
 /// 远端文件树的「下载…」：文件和目录复制到本机选定的目录，重名时不覆盖，完成后可以在文件管理器
-/// 中显示；目录中的特殊文件跳过并在提示中列出，单独下载特殊文件时报错。由 [`a_folder_on_a_connected_host_opens_as_the_workspace`] 调用，原因同
+/// 中显示；目录中的特殊文件跳过并在提示中列出，单独下载特殊文件时报错。由
+/// [`a_folder_on_a_connected_host_opens_as_the_workspace`] 调用，原因同
 /// [`folders_on_a_remote_host_are_not_taken_for_files`]。
 fn remote_items_download_to_this_computer() {
     let dir = search_folder("remote-download").canonicalize().unwrap();

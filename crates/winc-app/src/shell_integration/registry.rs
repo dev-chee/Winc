@@ -20,6 +20,7 @@ pub(super) const FILE_TYPES: &[&str] = &[
     "CLJS",
     "CLS",
     "CMAKE",
+    "CODE-WORKSPACE",
     "CONF",
     "CPP",
     "CPPM",
@@ -73,6 +74,7 @@ pub(super) const FILE_TYPES: &[&str] = &[
     "INL",
     "INO",
     "IPP",
+    "IPR",
     "IXX",
     "JAVA",
     "JBUILDER",
@@ -152,6 +154,7 @@ pub(super) const FILE_TYPES: &[&str] = &[
     "STAR",
     "STORYBOARD",
     "STY",
+    "SUBLIME-PROJECT",
     "SVELTE",
     "SVG",
     "SWIFT",
@@ -174,6 +177,7 @@ pub(super) const FILE_TYPES: &[&str] = &[
     "VCXPROJ",
     "VUE",
     "WEBMANIFEST",
+    "WINC-PROJECT",
     "WSDL",
     "WXML",
     "WXS",
@@ -248,7 +252,7 @@ pub(super) fn menu_labels(chinese: bool) -> (&'static str, &'static str) {
     }
 }
 
-/// 右键菜单是否显示：当前用户或全机之下登记了它，并且没有被盖住。
+/// 右键菜单是否显示：当前用户或全机之下登记了它，并且没有被遮住。
 pub(super) fn menu_on(registry: &impl Registry) -> bool {
     let key = menu_key(MENU_CLASSES[0]);
     let command = format!(r"{key}\command");
@@ -258,7 +262,7 @@ pub(super) fn menu_on(registry: &impl Registry) -> bool {
 
 /// 打开或关闭右键菜单，`record` 为真时记下这一选择（安装程序静默升级时沿用）。
 ///
-/// 全机之下已经登记时不重复登记，关闭时只盖住它。
+/// 全机之下已经登记时不重复登记，关闭时只遮住它。
 pub(super) fn set_menu(registry: &mut impl Registry, menu: Option<&Menu<'_>>, record: bool) {
     let machine = registry.has_key(true, &format!(r"{}\command", menu_key(MENU_CLASSES[0])));
     for class in MENU_CLASSES {

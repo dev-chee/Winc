@@ -79,7 +79,7 @@ fn progress_label(copying: &Copying, download: bool) -> String {
 }
 
 /// 把一次复制的结果 `result` 分成复制好的各项和失败的原因（由 `failed` 写出）；`copying` 被取消时
-/// 不算失败，取消之前复制好的各项照常列出。
+/// 不算失败，取消之前复制好的各项仍然列出。
 pub(in crate::app) fn copy_outcome(
     result: Result<Vec<PathBuf>, CopyError>,
     copying: &Copying,

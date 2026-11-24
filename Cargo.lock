@@ -3163,7 +3163,7 @@ dependencies = [
 
 [[package]]
 name = "winc"
-version = "0.1.890"
+version = "0.1.938"
 dependencies = [
  "winc-app",
 ]
@@ -3195,6 +3195,7 @@ dependencies = [
  "roxmltree",
  "security-framework",
  "serde_json",
+ "sha2",
  "unicode-segmentation",
  "wayland-backend",
  "wayland-client",
@@ -3363,7 +3364,7 @@ dependencies = [
 
 [[package]]
 name = "winc-version"
-version = "0.1.890"
+version = "0.1.938"
 
 [[package]]
 name = "winc-vim"

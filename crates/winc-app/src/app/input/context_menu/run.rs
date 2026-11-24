@@ -166,6 +166,8 @@ impl App {
                 MenuCommand::OpenFolder => self.pick(Pick::OpenFolder),
                 MenuCommand::AddFolder => self.ask_add_folder(),
                 MenuCommand::RenameGroup => self.ask_rename_group(),
+                MenuCommand::SaveProjectAs | MenuCommand::SaveProject => self.ask_save_project(),
+                MenuCommand::OpenProject => self.pick(Pick::OpenProject),
                 MenuCommand::OpenGroup(i) => self.open_group(i),
                 MenuCommand::GroupFolder(i, j) => self.open_group_folder(i, j),
                 MenuCommand::OpenWslFolder(i) => {
@@ -180,7 +182,7 @@ impl App {
                         self.browse_remote_host(host);
                     }
                 }
-                MenuCommand::CloseFolder => self.close_folder(),
+                MenuCommand::CloseFolder | MenuCommand::CloseProject => self.close_folder(),
                 _ => {}
             },
             MenuTarget::AddLanguage(task) => {
@@ -421,11 +423,11 @@ impl App {
                     self.activate_tab(i);
                 }
             }
-            MenuTarget::LatexProblems => {
-                if let MenuCommand::LatexProblem(i) = command {
-                    self.show_latex_problem(i);
-                }
-            }
+            MenuTarget::LatexProblems => match command {
+                MenuCommand::LatexProblem(i) => self.show_latex_problem(i),
+                MenuCommand::LatexRunRc => self.ask_skipped_latex_rc(),
+                _ => {}
+            },
             MenuTarget::RunConfigs => match command {
                 MenuCommand::RunSelect(i) => self.select_run_config(i),
                 MenuCommand::RunEdit => self.edit_run_configs(),
@@ -1041,15 +1043,19 @@ impl App {
         self.close_documents(&ids);
 
         // 选中原位置上的下一行，便于继续用 `⌘⌫` 连续删除。
-        if let Some(ws) = &mut self.editor.workspace {
+        if let Some(ws) = &self.editor.workspace {
             let was = ws.rows().iter().position(|e| {
                 deleted.contains(&e.path) || e.chain().iter().any(|p| deleted.contains(p))
             });
-            ws.refresh();
-            let count = ws.rows().len();
-            ws.select(was.filter(|_| count > 0).map(|i| i.min(count - 1)));
-            self.panels.tree.motion = None;
-            self.clamp_tree_scroll();
+            self.rescan_tree(move |app| {
+                if let Some(ws) = &mut app.editor.workspace {
+                    let count = ws.rows().len();
+                    ws.select(was.filter(|_| count > 0).map(|i| i.min(count - 1)));
+                }
+                app.panels.tree.motion = None;
+                app.clamp_tree_scroll();
+                app.request_redraw();
+            });
         }
 
         let message = match deleted.as_slice() {

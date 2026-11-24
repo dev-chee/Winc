@@ -151,12 +151,15 @@ settings-git-auto-fetch = 定时获取
 settings-git-tree = 树形显示更改
 settings-git-remember-credentials = 记住密码
 settings-git-confirm-push = 推送前确认
-settings-git-staging-area = 暂存区
+settings-git-staging-area = 暂存区布局
 settings-terminal-prompt = Winc 提示符
 settings-terminal-shell-integration = Shell 集成
 settings-terminal-application-priority = 终端应用优先
 settings-terminal-option-as-meta = Meta 键
 settings-key-search = 搜索快捷键
+settings-key-matches = 命令的快捷键
+settings-key-matches-desc = 名称或按键与搜索内容相符的命令
+settings-key-matches-show = 查看 { $count } 个
 
 ## 设置项的说明。
 
@@ -188,7 +191,7 @@ settings-git-pull-merge = 合并
 settings-git-pull-rebase = 变基
 settings-git-pull-desc = 拉取和同步时合并还是变基上游的提交
 settings-drop-folder = 拖入目录
-settings-drop-folder-add = 添加到窗口
+settings-drop-folder-add = 添加到项目
 settings-drop-folder-open = 不添加
 settings-drop-folder-desc = 不添加时，拖到编辑区打开，拖到文件树复制
 settings-find-in-files = 在文件中查找
@@ -250,6 +253,11 @@ settings-updates-ready = { $platform ->
    *[other] { $version } 已安装，重新启动 Winc 后生效
 }
 settings-updates-install-failed = 无法安装更新：{ $error }
+settings-updates-error-location = 无法确定 Winc 的安装位置
+settings-updates-error-write = 无法写入「{ $path }」：{ $error }
+settings-updates-error-tool = 无法运行 curl 或 wget：{ $error }
+settings-updates-error-size = 下载的文件大小不符（应为 { $expected } 字节，实际为 { $actual } 字节）
+settings-updates-error-signature = 下载的文件签名不符
 settings-format-on-save-desc = 保存前用所选的格式化工具整理文件
 settings-fix-on-save-desc = 保存前自动修复 lint 工具能修复的问题
 settings-skip-on-save-desc = 保存这些语言的文件时跳过修复和格式化
@@ -260,7 +268,7 @@ settings-git-auto-fetch-desc = 每 3 分钟在后台从远程仓库获取更新
 settings-git-tree-desc = 更改列表按目录分层显示，关闭后平铺列出
 settings-git-remember-credentials-desc = 把通过验证的 HTTPS 密码保存在系统钥匙串中，关闭时清除已保存的密码
 settings-git-confirm-push-desc = 推送前列出目标仓库和待推送的提交
-settings-git-staging-area-desc = 用暂存区选择要提交的更改，关闭后用勾选框选择
+settings-git-staging-area-desc = 分组列出已暂存和未暂存的更改，通过暂存选择要提交的内容；关闭后用勾选框选择
 settings-terminal-module-desc-key = 编辑区下方的终端面板（{ $key }），打开时启动一个辅助进程
 settings-terminal-module-desc = 编辑区下方的终端面板，打开时启动一个辅助进程
 settings-remote-module-desc = 通过 SSH 打开远程主机上的目录，连接期间在该主机上运行服务进程（实验性）

@@ -106,12 +106,8 @@ impl App {
             LanguageHover => self.lsp_hover(),
             LanguageDiagnostics => self.show_lsp_diagnostics(),
             RestartLanguageServers => self.restart_language_servers(),
-            // 有日志标签且可以后退时先在日志里后退；日志里已经找不到的提交（例如被跳过的
-            // 父提交）直接跳过，继续找回更早的记录。
-            GoBack if self.log_navigate(false) => {}
-            GoForward if self.log_navigate(true) => {}
-            GoBack => self.navigate(false),
-            GoForward => self.navigate(true),
+            GoBack => self.navigate_history(false),
+            GoForward => self.navigate_history(true),
             Settings => self.open_settings(),
             ReleaseNotes => self.open_release_notes(crate::release_notes::Scope::All),
             KeyboardShortcuts => {
@@ -126,6 +122,8 @@ impl App {
             OpenFile => self.pick(Pick::Open),
             OpenFolder => self.pick(Pick::OpenFolder),
             AddFolder => self.ask_add_folder(),
+            SaveProjectAs => self.ask_save_project(),
+            OpenProject => self.pick(Pick::OpenProject),
             RemoteConnect => self.open_remote_picker(),
             RemoteDisconnect => self.remote_disconnect(),
             OpenRecent => self.open_recent_folders(),
@@ -142,12 +140,12 @@ impl App {
             }
             CloseOtherTabs => {
                 if let Some(id) = self.editor.active().map(|d| d.id) {
-                    let others = self.editor.documents.iter().map(|d| d.id);
+                    let others = self.editor.tabs().iter().map(|d| d.id);
                     self.close_tabs(others.filter(|&other| other != id).collect());
                 }
             }
             CloseAllTabs => {
-                let all = self.editor.documents.iter().map(|d| d.id).collect();
+                let all = self.editor.tabs().iter().map(|d| d.id).collect();
                 self.close_tabs(all);
             }
             ReopenClosed => self.reopen_closed(),

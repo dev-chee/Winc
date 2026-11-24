@@ -38,6 +38,10 @@ pub enum Action {
     OpenFolder,
     /// 把一个目录加为窗口的附加目录。
     AddFolder,
+    /// 把窗口中的目录另存为项目文件。
+    SaveProjectAs,
+    /// 选择项目文件并打开。
+    OpenProject,
     RemoteConnect,
     RemoteDisconnect,
     OpenRecent,
@@ -440,6 +444,8 @@ impl Action {
             OpenFile => t!("cmd-open-file"),
             OpenFolder => t!("cmd-open-folder"),
             AddFolder => t!("cmd-add-folder"),
+            SaveProjectAs => t!("cmd-save-project-as"),
+            OpenProject => t!("cmd-open-project"),
             RemoteConnect => t!("cmd-remote-connect"),
             RemoteDisconnect => t!("cmd-remote-disconnect"),
             OpenRecent => t!("cmd-open-recent"),
@@ -749,11 +755,11 @@ impl Action {
             | RecordKeys
             | InstallShellCommand
             | UninstallShellCommand => Group::General,
-            NewFile | OpenFile | OpenFolder | AddFolder | RemoteConnect | RemoteDisconnect
-            | Save | SaveAs | CloseTab | CloseOtherTabs | CloseAllTabs | ReopenClosed | NextTab
-            | PreviousTab | CloseFolder | CloseWindow | CopyPath | CopyRelativePath
-            | RevealInFinder | CopyActivePath | CopyKeyPath | RevealActiveFile | OpenInTerminal
-            | Quit => Group::File,
+            NewFile | OpenFile | OpenFolder | OpenProject | AddFolder | SaveProjectAs
+            | RemoteConnect | RemoteDisconnect | Save | SaveAs | CloseTab | CloseOtherTabs
+            | CloseAllTabs | ReopenClosed | NextTab | PreviousTab | CloseFolder | CloseWindow
+            | CopyPath | CopyRelativePath | RevealInFinder | CopyActivePath | CopyKeyPath
+            | RevealActiveFile | OpenInTerminal | Quit => Group::File,
             NewWindow | OpenRecent | CopyReference | CopyAbsoluteReference => Group::File,
             Undo
             | Redo
@@ -1024,11 +1030,10 @@ impl Action {
 
     /// 光标在差异标签右侧时，是否把命令交给右侧对应的源文档执行。
     ///
-    /// 「编辑」分组的命令默认都交给右侧，新加的编辑命令在差异里也能直接用；另外加上保存和
-    /// 「选中全部匹配」。等同于方向键、删除键的命令照真的按键处理，不在此列。排除的还有不改动
-    /// 文字、只作用于编辑器视图或文件设置的命令：滚到中间、折叠与书签
-    /// 只对普通编辑器的视图有意义；缩进方式、缩进转换、检测缩进、换行符和语言模式改的是整份
-    /// 文件的设置，不在差异里执行。
+    /// 「编辑」分组的命令默认都交给右侧，新加的编辑命令在差异里也能直接用；另外加上保存和「选中全部
+    /// 匹配」。等同于方向键、删除键的命令照真的按键处理，不在此列。排除的还有不改动文字、只作用于编
+    /// 辑器视图或文件设置的命令：滚到中间、折叠与书签只对普通编辑器的视图有意义；缩进方式、缩进
+    /// 转换、检测缩进、换行符和语言模式改的是整份文件的设置，不在差异里执行。
     pub fn edits_in_diff(self) -> bool {
         use Action::*;
         match self {

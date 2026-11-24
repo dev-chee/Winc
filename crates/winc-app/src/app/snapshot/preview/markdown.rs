@@ -64,13 +64,14 @@ fn tab_nests_list_items_in_the_preview() {
 fn arrows_skip_the_blank_lines_between_blocks() {
     use winit::keyboard::{Key, NamedKey};
 
-    let (mut app, dir) = live_doc("md-gap", "甲\n\n\n乙\n");
+    // 多出的空行显示为空段落，光标停在上面，见 `blank_lines`。
+    let (mut app, dir) = live_doc("md-gap", "甲\n\n乙\n");
     put_caret(&mut app, "甲", true);
     assert!(app.markdown_key(&Key::Named(NamedKey::ArrowRight), false));
-    assert_eq!(with_caret(&app), "甲\n\n\n|乙\n");
+    assert_eq!(with_caret(&app), "甲\n\n|乙\n");
     settle(&mut app);
     assert!(app.markdown_key(&Key::Named(NamedKey::ArrowLeft), false));
-    assert_eq!(with_caret(&app), "甲|\n\n\n乙\n");
+    assert_eq!(with_caret(&app), "甲|\n\n乙\n");
     settle(&mut app);
     // 块内的逐字移动交给编辑区。
     assert!(!app.markdown_key(&Key::Named(NamedKey::ArrowLeft), false));
@@ -1084,7 +1085,7 @@ fn block_markers_take_effect_after_a_space() {
     let shown = |app: &App| crate::app::preview::markdown::laid::full_text(app).unwrap();
     for marker in ["-", "1.", "#", ">"] {
         app.run(winc_editor::Command::Insert(marker.into()));
-        paint(&mut app);
+        settle(&mut app);
         assert!(
             shown(&app).contains(&format!("前文\n{marker}\n")),
             "{}",
@@ -1092,7 +1093,7 @@ fn block_markers_take_effect_after_a_space() {
         );
         let y = caret_screen_y(&app);
         app.run(winc_editor::Command::Insert(" ".into()));
-        paint(&mut app);
+        settle(&mut app);
         // 成为列表项、引用之后记号不再按文字显示，光标仍在同一行上；标题在光标位于开头时
         // 显示 `#`，字号随之变大。
         if marker != "#" {

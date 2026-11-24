@@ -58,7 +58,9 @@ pub use input::context_menu::{ContextMenu, MenuButton, MenuCommand};
 pub use input::palette::palette;
 pub(crate) use lifecycle::alert::{AlertButton, AlertKey, AlertPart, AlertParts, InAppAlert};
 use lifecycle::appearance::{forced_theme, unusable_font};
-pub(crate) use lifecycle::backup::{restore_at_launch, restore_tabs};
+pub(crate) use lifecycle::backup::{
+    Prepared, prepare_restore, restore_at_launch, restore_prepared,
+};
 pub use lifecycle::closing::{CloseRequest, SaveChoice, SavePrompt};
 pub use lifecycle::notice::{NoticeAction, NoticeGhost, NoticeKind};
 pub use lifecycle::title_bar::WindowControl;
@@ -183,6 +185,9 @@ pub enum UserEvent {
     /// 应用内更新的状态发生变化。
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     UpdateState(crate::winc::UpdateState),
+    /// X11、Wayland 上系统的深浅色外观变了，交给每个窗口（见 `crate::color_scheme`）。
+    #[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+    SystemThemeChanged(Theme),
     /// 右键菜单中选中一项，参数是 `AppKit` 菜单项的编号（`tag`）。
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     MenuCommand(isize),
@@ -198,10 +203,12 @@ pub enum UserEvent {
     Move(Vec<PathBuf>, PathBuf, bool),
     /// 「要在哪里打开」提示框中做了选择：目录、是否在新窗口打开、是否勾选了「不再询问」。
     OpenFolderIn(PathBuf, bool, bool),
+    /// 「要在哪里打开」提示框中选择了「添加到此项目」：该目录加入当前项目。
+    AttachFolder(PathBuf),
     /// 后台格式化已有结果。
     Formatted,
     /// 提示框中回答了是否允许运行项目自带的格式化工具。
-    ToolChoice(ToolAnswer),
+    ToolChoice(Box<ToolAnswer>),
     /// 确认框中同意运行参数所指的运行配置。
     RunApproved(Box<winc_config::RunConfig>),
     /// 提示框中回答了是否信任 Git 仓库（第一个参数）指纹为第二个参数的配置。
@@ -262,8 +269,8 @@ pub enum UserEvent {
     Outline,
     /// 后台的提交、回滚已完成，或已取得上一次提交的信息。
     GitCommit,
-    /// 确认框中确认回滚参数中的文件。
-    GitRollback(Vec<PathBuf>),
+    /// 确认框中已确认的回滚：要回滚的文件和回滚的目标。
+    GitRollback(Vec<PathBuf>, crate::app::git::commit::RollbackTo),
     /// 确认框中确认中止进行中的合并、变基等操作。
     GitAbort,
     /// 确认框里选了跳过：跳过变基、拣选等操作停着的这个提交。
@@ -278,7 +285,7 @@ pub enum UserEvent {
     GitPushConfirmed(crate::app::git::commit::PushIntent, bool),
     /// 推送的确认框里选了「查看提交」：打开 Git 日志。
     GitShowLog,
-    /// Git 输出有了新的内容：开着的输出标签接着显示。
+    /// Git 输出有了新的内容：开着的输出标签继续显示。
     GitOutput,
     /// 提示框中确认提交已勾选的文件并推送。
     GitCommitAndPush,
@@ -298,8 +305,8 @@ pub enum UserEvent {
     RemoteListed,
     /// 后台为目录菜单读好了一个远端目录。
     FolderListed,
-    /// 后台对远端目录的监视已经启动。
-    RemoteWatching,
+    /// 后台启动好了对一个目录的监视，或者没能启动。
+    WatcherStarted,
     /// 到远端主机的连接意外中断。
     RemoteClosed(winc_backend::Target),
     /// 一台远端主机的集成脚本和 shell 列表已经准备完；各窗口都收到。
@@ -354,6 +361,14 @@ pub enum UserEvent {
     GitBlame,
     /// 后台已编译完一个 LaTeX 文档。
     Latex,
+    /// 确认框中同意运行项目的 `latexmkrc`：要重新编译的文档，文件所在的目录和内容。
+    LatexRc(Box<(DocumentId, PathBuf, String)>),
+    /// 后台读好了运行配置。
+    RunConfigsLoaded,
+    /// 后台读好了恢复标签要用的备份和文件信息。
+    TabsPrepared,
+    /// 后台读写完了状态文件：第几次请求，和文件里现在的状态。
+    StateStored(u64, Box<State>),
     /// 后台已检查或重读被其他程序修改的文件。
     Reread,
     /// 后台已重读文件树中被其他程序修改的目录。
@@ -748,6 +763,11 @@ enum Drag {
     Columns {
         anchor: (usize, usize),
     },
+    /// `⇧⌥` 单击已框出列，若继续拖动则转为从按下处 `anchor` 开始框选一列。
+    ColumnClick {
+        origin: (f32, f32),
+        anchor: (usize, usize),
+    },
     /// `⌥` 拖动：添加一个选区；`origin` 是按下处的位置（字符偏移）。
     AddSelect {
         origin: usize,
@@ -1012,7 +1032,7 @@ pub struct App {
     /// 本窗口最近关闭的标签、最近切换到的文件和最近使用的命令。
     pub(crate) history: workspace::History,
     /// 两段组合键（如 `⌘K ⌘S`）的第一段，正在等待第二段。
-    pub(crate) pending_chord: Option<crate::keymap::Stroke>,
+    pub(crate) pending_chord: Option<input::keyboard::PendingChord>,
     /// 单按修饰键的状态，用于连按两下修饰键的快捷键。
     pub(crate) taps: input::tap::Taps,
     /// 「首次设置」中快捷键一页的状态。
@@ -1156,7 +1176,7 @@ impl App {
             UserEvent::RemoteConnected => self.poll_remote(),
             UserEvent::RemoteListed => self.poll_remote_listings(),
             UserEvent::FolderListed => self.poll_folder_levels(),
-            UserEvent::RemoteWatching => self.poll_remote_watcher(),
+            UserEvent::WatcherStarted => self.poll_watchers(),
             UserEvent::FormatPlanned => self.poll_formatting(),
             UserEvent::FileWorked => self.poll_file_work(),
             UserEvent::GitMergeSides => self.poll_merge_sides(),
@@ -1165,6 +1185,8 @@ impl App {
             UserEvent::Latex => self.poll_latex(),
             UserEvent::Reread => self.poll_rereads(),
             UserEvent::TreeScanned => self.poll_tree_scans(),
+            UserEvent::RunConfigsLoaded => self.poll_run_configs(),
+            UserEvent::TabsPrepared => self.poll_prepared_tabs(),
             UserEvent::Saved => self.poll_saves(),
             UserEvent::Loaded => self.poll_loads(),
             UserEvent::Counted => self.poll_words(),
